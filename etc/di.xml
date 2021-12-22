@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (c) 2021. All rights reserved.
+  ~ @author: Volodymyr Hryvinskyi <mailto:volodymyr@hryvinskyi.com>
+  -->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Hryvinskyi\SeoRobotsFrontend\Model\IsIgnoredUrlsInterface"
+                type="Hryvinskyi\SeoRobotsFrontend\Model\IsIgnoredUrls"/>
+    <preference for="Hryvinskyi\SeoRobotsFrontend\Model\IsIgnoredActionsInterface"
+                type="Hryvinskyi\SeoRobotsFrontend\Model\IsIgnoredActions"/>
+    <preference for="Hryvinskyi\SeoRobotsFrontend\Model\GetRobotsByRequestInterface"
+                type="Hryvinskyi\SeoRobotsFrontend\Model\GetRobotsByRequest"/>
+    <preference for="Hryvinskyi\SeoRobotsFrontend\Model\ApplyRobotsInterface"
+                type="Hryvinskyi\SeoRobotsFrontend\Model\ApplyRobots"/>
+</config>
