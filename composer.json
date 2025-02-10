@@ -1,11 +1,11 @@
 {
     "name": "hryvinskyi/magento2-seo-robots-frontend",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "N/A",
     "type": "magento2-module",
     "require": {
         "magento/framework": "*",
-        "hryvinskyi/magento2-seo-robots": "1.0.*"
+        "hryvinskyi/magento2-seo-robots": "^1.0.3"
     },
     "require-dev": {
         "roave/security-advisories": "dev-latest"
