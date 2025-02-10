@@ -78,5 +78,9 @@ class ApplyRobots implements ApplyRobotsInterface
         if ($this->config->isNoindexNofollowForNoRouteIndex() === true && $request->getControllerName() === 'noroute') {
             $pageConfig->setRobots($this->robotsList->getMetaRobotsByCode(RobotsListInterface::NOINDEX_NOFOLLOW));
         }
+
+        if ($request->getParam('p') && (int)$request->getParam('p') > 1 && $this->config->isPaginatedRobots() === true) {
+            $pageConfig->setRobots($this->robotsList->getMetaRobotsByCode($this->config->getPaginatedMetaRobots()));
+        }
     }
 }
