@@ -40,24 +40,32 @@ class ApplyRobots implements ApplyRobotsInterface
     private $config;
 
     /**
+     * @var RobotsProviderInterface[]
+     */
+    private $robotsProviders;
+
+    /**
      * @param IsIgnoredActionsInterface $ignoredActions
      * @param IsIgnoredUrlsInterface $isIgnoredUrls
      * @param GetRobotsByRequestInterface $getRobotsByRequest
      * @param RobotsListInterface $robotsList
      * @param ConfigInterface $config
+     * @param array $robotsProviders
      */
     public function __construct(
         IsIgnoredActionsInterface $ignoredActions,
         IsIgnoredUrlsInterface $isIgnoredUrls,
         GetRobotsByRequestInterface $getRobotsByRequest,
         RobotsListInterface $robotsList,
-        ConfigInterface $config
+        ConfigInterface $config,
+        array $robotsProviders = []
     ) {
         $this->ignoredActions = $ignoredActions;
         $this->isIgnoredUrls = $isIgnoredUrls;
         $this->getRobotsByRequest = $getRobotsByRequest;
         $this->robotsList = $robotsList;
         $this->config = $config;
+        $this->robotsProviders = $this->sortProviders($robotsProviders);
     }
 
     /**
@@ -82,5 +90,27 @@ class ApplyRobots implements ApplyRobotsInterface
         if ($request->getParam('p') && (int)$request->getParam('p') > 1 && $this->config->isPaginatedRobots() === true) {
             $pageConfig->setRobots($this->robotsList->getMetaRobotsByCode($this->config->getPaginatedMetaRobots()));
         }
+
+        // Apply custom robots from providers
+        foreach ($this->robotsProviders as $provider) {
+            if ($providerRobots = $provider->getRobots($request)) {
+                $pageConfig->setRobots($providerRobots);
+            }
+        }
+    }
+
+    /**
+     * Sort providers by sort order
+     *
+     * @param array $providers
+     * @return array
+     */
+    private function sortProviders(array $providers): array
+    {
+        usort($providers, function (RobotsProviderInterface $a, RobotsProviderInterface $b) {
+            return $a->getSortOrder() <=> $b->getSortOrder();
+        });
+
+        return $providers;
     }
 }
