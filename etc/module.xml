@@ -8,6 +8,7 @@
         xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
     <module name="Hryvinskyi_SeoRobotsFrontend">
         <sequence>
+            <module name="Hryvinskyi_SeoRobotsApi"/>
             <module name="Hryvinskyi_SeoRobots"/>
         </sequence>
     </module>

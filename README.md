@@ -2,9 +2,12 @@
 
 Frontend module for managing robots meta tags in Magento 2.
 
+> **Part of [hryvinskyi/magento2-seo-robots-pack](https://github.com/hryvinskyi/magento2-seo-robots-pack)** - Complete SEO Robots solution for Magento 2
+
 ## Features
 
 - Apply custom robots meta tags based on URL patterns and actions
+- Support for HTTPS-specific robots settings
 - NOINDEX/NOFOLLOW for 404 pages
 - Custom robots for paginated pages
 - **Extension point for custom robots providers**
@@ -71,7 +74,7 @@ Providers are executed in order of their `getSortOrder()` value (ascending). If 
 ## Configuration
 
 Configuration is available in:
-**Stores > Configuration > Hryvinskyi Exstensions -> SEO > Meta Robots**
+**Stores > Configuration > Hryvinskyi -> SEO > Robots**
 
 ## Dependencies
 
