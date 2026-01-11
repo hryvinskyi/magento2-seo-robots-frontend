@@ -9,6 +9,8 @@ declare(strict_types=1);
 namespace Hryvinskyi\SeoRobotsFrontend\Observer;
 
 use Hryvinskyi\SeoRobotsApi\Api\ConfigInterface;
+use Hryvinskyi\SeoRobotsApi\Api\RobotsListInterface;
+use Hryvinskyi\SeoRobotsFrontend\Model\GetXRobotsByRequestInterface;
 use Magento\Framework\App\Response\Http as HttpResponse;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
@@ -17,34 +19,13 @@ use Psr\Log\LoggerInterface;
 
 class AddXRobotsHeader implements ObserverInterface
 {
-    /**
-     * @var ConfigInterface
-     */
-    private $config;
-
-    /**
-     * @var PageConfig
-     */
-    private $pageConfig;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @param ConfigInterface $config
-     * @param PageConfig $pageConfig
-     * @param LoggerInterface $logger
-     */
     public function __construct(
-        ConfigInterface $config,
-        PageConfig $pageConfig,
-        LoggerInterface $logger
+        private readonly ConfigInterface $config,
+        private readonly PageConfig $pageConfig,
+        private readonly LoggerInterface $logger,
+        private readonly GetXRobotsByRequestInterface $getXRobotsByRequest,
+        private readonly RobotsListInterface $robotsList
     ) {
-        $this->config = $config;
-        $this->pageConfig = $pageConfig;
-        $this->logger = $logger;
     }
 
     /**
@@ -55,10 +36,6 @@ class AddXRobotsHeader implements ObserverInterface
      */
     public function execute(Observer $observer): void
     {
-        if (!$this->config->isEnabled()) {
-            return;
-        }
-
         if (!$this->config->isRobotsXheaderEnabled()) {
             return;
         }
@@ -71,8 +48,19 @@ class AddXRobotsHeader implements ObserverInterface
                 return;
             }
 
-            // Get robots meta tag value from PageConfig (set by Hryvinskyi module)
-            $robots = $this->pageConfig->getRobots();
+            if ($response->isRedirect()) {
+                return;
+            }
+
+            // Try to get independent X-Robots-Tag directives first
+            $xrobotsDirectives = $this->getXRobotsByRequest->execute();
+
+            // If no independent X-Robots directives, fallback to meta robots
+            if (empty($xrobotsDirectives)) {
+                $robots = $this->pageConfig->getRobots();
+            } else {
+                $robots = $this->robotsList->buildMetaRobotsFromDirectives($xrobotsDirectives);
+            }
 
             if (empty($robots)) {
                 return;

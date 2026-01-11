@@ -1,7 +1,8 @@
 <?php
 /**
- * Copyright (c) 2021. All rights reserved.
- * @author: Volodymyr Hryvinskyi <mailto:volodymyr@hryvinskyi.com>
+ * Copyright (c) 2021-2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
  */
 
 declare(strict_types=1);
@@ -10,18 +11,9 @@ namespace Hryvinskyi\SeoRobotsFrontend\Model;
 
 class IgnoredUrlsList
 {
-    /**
-     * @var array
-     */
-    private $list;
-
-    /**
-     * @param array $list
-     */
     public function __construct(
-        array $list = []
+        private readonly array $list = []
     ) {
-        $this->list = $list;
     }
 
     /**

@@ -1,7 +1,8 @@
 <?php
 /**
- * Copyright (c) 2021. All rights reserved.
- * @author: Volodymyr Hryvinskyi <mailto:volodymyr@hryvinskyi.com>
+ * Copyright (c) 2021-2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
  */
 
 declare(strict_types=1);
@@ -15,56 +16,14 @@ use Magento\Framework\View\Page\Config;
 
 class ApplyRobots implements ApplyRobotsInterface
 {
-    /**
-     * @var IsIgnoredActionsInterface
-     */
-    private $ignoredActions;
-
-    /**
-     * @var IsIgnoredUrlsInterface
-     */
-    private $isIgnoredUrls;
-
-    /**
-     * @var GetRobotsByRequestInterface
-     */
-    private $getRobotsByRequest;
-
-    /**
-     * @var RobotsListInterface
-     */
-    private $robotsList;
-    /**
-     * @var ConfigInterface
-     */
-    private $config;
-
-    /**
-     * @var RobotsProviderInterface[]
-     */
-    private $robotsProviders;
-
-    /**
-     * @param IsIgnoredActionsInterface $ignoredActions
-     * @param IsIgnoredUrlsInterface $isIgnoredUrls
-     * @param GetRobotsByRequestInterface $getRobotsByRequest
-     * @param RobotsListInterface $robotsList
-     * @param ConfigInterface $config
-     * @param array $robotsProviders
-     */
     public function __construct(
-        IsIgnoredActionsInterface $ignoredActions,
-        IsIgnoredUrlsInterface $isIgnoredUrls,
-        GetRobotsByRequestInterface $getRobotsByRequest,
-        RobotsListInterface $robotsList,
-        ConfigInterface $config,
-        array $robotsProviders = []
+        private readonly IsIgnoredActionsInterface $ignoredActions,
+        private readonly IsIgnoredUrlsInterface $isIgnoredUrls,
+        private readonly GetRobotsByRequestInterface $getRobotsByRequest,
+        private readonly RobotsListInterface $robotsList,
+        private readonly ConfigInterface $config,
+        private array $robotsProviders = []
     ) {
-        $this->ignoredActions = $ignoredActions;
-        $this->isIgnoredUrls = $isIgnoredUrls;
-        $this->getRobotsByRequest = $getRobotsByRequest;
-        $this->robotsList = $robotsList;
-        $this->config = $config;
         $this->robotsProviders = $this->sortProviders($robotsProviders);
     }
 
@@ -84,11 +43,12 @@ class ApplyRobots implements ApplyRobotsInterface
         }
 
         if ($this->config->isNoindexNofollowForNoRouteIndex() === true && $request->getControllerName() === 'noroute') {
-            $pageConfig->setRobots($this->robotsList->getMetaRobotsByCode(RobotsListInterface::NOINDEX_NOFOLLOW));
+            $pageConfig->setRobots($this->robotsList->buildMetaRobotsFromDirectives(['noindex', 'nofollow']));
         }
 
         if ($request->getParam('p') && (int)$request->getParam('p') > 1 && $this->config->isPaginatedRobots() === true) {
-            $pageConfig->setRobots($this->robotsList->getMetaRobotsByCode($this->config->getPaginatedMetaRobots()));
+            $directives = $this->config->getPaginatedMetaRobots();
+            $pageConfig->setRobots($this->robotsList->buildMetaRobotsFromDirectives($directives));
         }
 
         // Apply custom robots from providers

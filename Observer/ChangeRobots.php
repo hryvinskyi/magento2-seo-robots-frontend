@@ -17,33 +17,11 @@ use Magento\Framework\View\Page\Config as PageConfig;
 
 class ChangeRobots implements ObserverInterface
 {
-    /**
-     * @var ApplyRobotsInterface
-     */
-    private $applyRobots;
-
-    /**
-     * @var PageConfig
-     */
-    private $pageConfig;
-
-    /**
-     * @var RequestInterface
-     */
-    protected $request;
-
-    /**
-     * ChangeRobots constructor.
-     *
-     * @param ApplyRobotsInterface $applyRobots
-     * @param PageConfig $pageConfig
-     * @param RequestInterface $request
-     */
-    public function __construct(ApplyRobotsInterface $applyRobots, PageConfig $pageConfig, RequestInterface $request)
-    {
-        $this->applyRobots = $applyRobots;
-        $this->pageConfig = $pageConfig;
-        $this->request = $request;
+    public function __construct(
+        private readonly ApplyRobotsInterface $applyRobots,
+        private readonly PageConfig $pageConfig,
+        private readonly RequestInterface $request
+    ) {
     }
 
     /**

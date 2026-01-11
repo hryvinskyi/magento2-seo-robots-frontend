@@ -8,59 +8,20 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\SeoRobotsFrontend\Model;
 
-use Hryvinskyi\SeoApi\Api\GetBaseUrlInterface;
 use Hryvinskyi\SeoApi\Api\CheckPatternInterface;
+use Hryvinskyi\SeoApi\Api\GetBaseUrlInterface;
 use Hryvinskyi\SeoRobotsApi\Api\ConfigInterface;
 use Hryvinskyi\SeoRobotsApi\Api\RobotsListInterface;
 use Magento\Framework\App\HttpRequestInterface;
-use Magento\Store\Model\StoreManagerInterface;
 
 class GetRobotsByRequest implements GetRobotsByRequestInterface
 {
-    /**
-     * @var StoreManagerInterface
-     */
-    private $storeManager;
-
-    /**
-     * @var ConfigInterface
-     */
-    private $config;
-
-    /**
-     * @var RobotsListInterface
-     */
-    private $robotsList;
-
-    /**
-     * @var CheckPatternInterface
-     */
-    private $checkPattern;
-
-    /**
-     * @var GetBaseUrlInterface
-     */
-    private $baseUrl;
-
-    /**
-     * @param StoreManagerInterface $storeManager
-     * @param ConfigInterface $config
-     * @param RobotsListInterface $robotsList
-     * @param CheckPatternInterface $checkPattern
-     * @param GetBaseUrlInterface $baseUrl
-     */
     public function __construct(
-        StoreManagerInterface $storeManager,
-        ConfigInterface $config,
-        RobotsListInterface $robotsList,
-        CheckPatternInterface $checkPattern,
-        GetBaseUrlInterface $baseUrl
+        private readonly ConfigInterface $config,
+        private readonly RobotsListInterface $robotsList,
+        private readonly CheckPatternInterface $checkPattern,
+        private readonly GetBaseUrlInterface $baseUrl
     ) {
-        $this->storeManager = $storeManager;
-        $this->config = $config;
-        $this->robotsList = $robotsList;
-        $this->checkPattern = $checkPattern;
-        $this->baseUrl = $baseUrl;
     }
 
     /**
@@ -68,21 +29,23 @@ class GetRobotsByRequest implements GetRobotsByRequestInterface
      */
     public function execute(HttpRequestInterface $request): ?string
     {
-        if (($code = $this->config->getHttpsMetaRobots()) && $this->storeManager->getStore()->isCurrentlySecure()) {
-            return $this->robotsList->getMetaRobotsByCode((int)$code);
-        }
-
         $fullAction = $request->getFullActionName();
         $robots = $this->config->getMetaRobots();
+
+        // Sort by priority (highest first)
         usort($robots, static function ($a, $b) {
-            return $b['priority'] <=> $a['priority'];
+            return ($b['priority'] ?? 0) <=> ($a['priority'] ?? 0);
         });
 
         foreach ($robots as $robot) {
-            if ($this->checkPattern->execute($fullAction, $robot['pattern'])
-                || $this->checkPattern->execute($this->baseUrl->execute(), $robot['pattern'])
+            if ($this->checkPattern->execute($fullAction, $robot['pattern'] ?? '')
+                || $this->checkPattern->execute($this->baseUrl->execute(), $robot['pattern'] ?? '')
             ) {
-                return $this->robotsList->getMetaRobotsByCode((int)$robot['option']);
+                // Use new directive array format instead of legacy 'option' code
+                $directives = $robot['meta_directives'] ?? [];
+                if (!empty($directives)) {
+                    return $this->robotsList->buildMetaRobotsFromDirectives($directives);
+                }
             }
         }
 

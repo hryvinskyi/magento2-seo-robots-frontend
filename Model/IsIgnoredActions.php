@@ -1,7 +1,8 @@
 <?php
 /**
- * Copyright (c) 2021. All rights reserved.
- * @author: Volodymyr Hryvinskyi <mailto:volodymyr@hryvinskyi.com>
+ * Copyright (c) 2021-2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
  */
 
 declare(strict_types=1);
@@ -12,17 +13,8 @@ use Magento\Framework\App\HttpRequestInterface;
 
 class IsIgnoredActions implements IsIgnoredActionsInterface
 {
-    /**
-     * @var IgnoredActionsList
-     */
-    private $ignoredActionsList;
-
-    /**
-     * @param IgnoredActionsList $ignoredActionsList
-     */
-    public function __construct(IgnoredActionsList $ignoredActionsList)
+    public function __construct(private readonly IgnoredActionsList $ignoredActionsList)
     {
-        $this->ignoredActionsList = $ignoredActionsList;
     }
 
     /**
