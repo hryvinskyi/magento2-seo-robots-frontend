@@ -55,18 +55,35 @@ class GetXRobotsByRequest implements GetXRobotsByRequestInterface
             }
         }
 
-        // Check for paginated content (?p= parameter > 1)
-        $page = $this->request->getParam('p');
-        if ($page && (int)$page > 1 && $this->config->isXRobotsPaginatedEnabled()) {
-            $paginatedDirectives = $this->config->getPaginatedXRobots();
-            if (!empty($paginatedDirectives)) {
-                return $paginatedDirectives;
+        // Check for paginated content using URL query params directly
+        $queryParams = $this->request->getQuery()->toArray();
+        if (isset($queryParams['p']) && (int)$queryParams['p'] > 1) {
+            // Pagination only (no filters) - 'p' is the only query parameter
+            if (count($queryParams) === 1 && $this->config->isXRobotsPaginatedEnabled()) {
+                $paginatedDirectives = $this->config->getPaginatedXRobots();
+                if (!empty($paginatedDirectives)) {
+                    return $paginatedDirectives;
+                }
+                // Fall back to meta robots paginated directives if no specific X-Robots set
+                if ($this->config->isPaginatedRobots()) {
+                    $metaPaginatedDirectives = $this->config->getPaginatedMetaRobots();
+                    if (!empty($metaPaginatedDirectives)) {
+                        return $metaPaginatedDirectives;
+                    }
+                }
             }
-            // Fall back to meta robots paginated directives if no specific X-Robots set
-            if ($this->config->isPaginatedRobots()) {
-                $metaPaginatedDirectives = $this->config->getPaginatedMetaRobots();
-                if (!empty($metaPaginatedDirectives)) {
-                    return $metaPaginatedDirectives;
+            // Pagination with filters - 'p' plus other query parameters
+            elseif (count($queryParams) > 1 && $this->config->isXRobotsPaginatedFilteredEnabled()) {
+                $filteredDirectives = $this->config->getPaginatedFilteredXRobots();
+                if (!empty($filteredDirectives)) {
+                    return $filteredDirectives;
+                }
+                // Fall back to meta robots paginated filtered directives if no specific X-Robots set
+                if ($this->config->isPaginatedFilteredRobots()) {
+                    $metaFilteredDirectives = $this->config->getPaginatedFilteredMetaRobots();
+                    if (!empty($metaFilteredDirectives)) {
+                        return $metaFilteredDirectives;
+                    }
                 }
             }
         }

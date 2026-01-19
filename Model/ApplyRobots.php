@@ -46,9 +46,19 @@ class ApplyRobots implements ApplyRobotsInterface
             $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($this->config->getNoRouteRobotsTypes()));
         }
 
-        if ($request->getParam('p') && (int)$request->getParam('p') > 1 && $this->config->isPaginatedRobots() === true) {
-            $directives = $this->config->getPaginatedMetaRobots();
-            $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($directives));
+        // Check URL query params directly
+        $queryParams = $request->getQuery()->toArray();
+        if (isset($queryParams['p']) && (int)$queryParams['p'] > 1) {
+            // Pagination only (no filters) - 'p' is the only query parameter
+            if (count($queryParams) === 1 && $this->config->isPaginatedRobots() === true) {
+                $directives = $this->config->getPaginatedMetaRobots();
+                $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($directives));
+            }
+            // Pagination with filters - 'p' plus other query parameters
+            elseif (count($queryParams) > 1 && $this->config->isPaginatedFilteredRobots() === true) {
+                $directives = $this->config->getPaginatedFilteredMetaRobots();
+                $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($directives));
+            }
         }
 
         // Apply custom robots from providers
