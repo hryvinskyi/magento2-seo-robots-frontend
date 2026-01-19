@@ -13,6 +13,7 @@ use Hryvinskyi\SeoApi\Api\GetBaseUrlInterface;
 use Hryvinskyi\SeoRobotsApi\Api\ConfigInterface;
 use Hryvinskyi\SeoRobotsApi\Api\RobotsListInterface;
 use Magento\Framework\App\HttpRequestInterface;
+use Magento\Framework\Serialize\SerializerInterface;
 
 class GetRobotsByRequest implements GetRobotsByRequestInterface
 {
@@ -20,7 +21,8 @@ class GetRobotsByRequest implements GetRobotsByRequestInterface
         private readonly ConfigInterface $config,
         private readonly RobotsListInterface $robotsList,
         private readonly CheckPatternInterface $checkPattern,
-        private readonly GetBaseUrlInterface $baseUrl
+        private readonly GetBaseUrlInterface $baseUrl,
+        private readonly SerializerInterface $serializer
     ) {
     }
 
@@ -44,7 +46,18 @@ class GetRobotsByRequest implements GetRobotsByRequestInterface
                 // Use new directive array format instead of legacy 'option' code
                 $directives = $robot['meta_directives'] ?? [];
                 if (!empty($directives)) {
-                    return $this->robotsList->buildMetaRobotsFromDirectives($directives);
+                    // Unserialize if stored as string
+                    if (is_string($directives)) {
+                        $directives = $this->serializer->unserialize($directives);
+                    }
+                    if (is_array($directives)) {
+                        // Check if structured format (array of arrays with 'value' key)
+                        $firstElement = reset($directives);
+                        if (is_array($firstElement) && isset($firstElement['value'])) {
+                            return $this->robotsList->buildFromStructuredDirectives($directives);
+                        }
+                        return $this->robotsList->buildMetaRobotsFromDirectives($directives);
+                    }
                 }
             }
         }

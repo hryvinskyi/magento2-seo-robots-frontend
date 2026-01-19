@@ -42,6 +42,36 @@ class GetXRobotsByRequest implements GetXRobotsByRequestInterface
             }
         }
 
+        // Check for 404 pages (noroute controller)
+        if ($this->request->getControllerName() === 'noroute') {
+            $noRouteDirectives = $this->config->getNoRouteXRobotsTypes();
+            if (!empty($noRouteDirectives)) {
+                return $noRouteDirectives;
+            }
+            // Fall back to meta robots 404 directives if no specific X-Robots set
+            $metaNoRouteDirectives = $this->config->getNoRouteRobotsTypes();
+            if (!empty($metaNoRouteDirectives)) {
+                return $metaNoRouteDirectives;
+            }
+        }
+
+        // Check for paginated content (?p= parameter > 1)
+        $page = $this->request->getParam('p');
+        if ($page && (int)$page > 1 && $this->config->isXRobotsPaginatedEnabled()) {
+            $paginatedDirectives = $this->config->getPaginatedXRobots();
+            if (!empty($paginatedDirectives)) {
+                return $paginatedDirectives;
+            }
+            // Fall back to meta robots paginated directives if no specific X-Robots set
+            if ($this->config->isPaginatedRobots()) {
+                $metaPaginatedDirectives = $this->config->getPaginatedMetaRobots();
+                if (!empty($metaPaginatedDirectives)) {
+                    return $metaPaginatedDirectives;
+                }
+            }
+        }
+
+
         // Get independent X-Robots rules
         $xrobotsRules = $this->config->getXRobotsRules();
 

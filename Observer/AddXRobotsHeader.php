@@ -59,7 +59,7 @@ class AddXRobotsHeader implements ObserverInterface
             if (empty($xrobotsDirectives)) {
                 $robots = $this->pageConfig->getRobots();
             } else {
-                $robots = $this->robotsList->buildMetaRobotsFromDirectives($xrobotsDirectives);
+                $robots = $this->robotsList->buildXRobotsFromStructuredDirectives($xrobotsDirectives);
             }
 
             if (empty($robots)) {

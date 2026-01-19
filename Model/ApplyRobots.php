@@ -42,13 +42,13 @@ class ApplyRobots implements ApplyRobotsInterface
             $pageConfig->setRobots($robots);
         }
 
-        if ($this->config->isNoindexNofollowForNoRouteIndex() === true && $request->getControllerName() === 'noroute') {
-            $pageConfig->setRobots($this->robotsList->buildMetaRobotsFromDirectives(['noindex', 'nofollow']));
+        if (!empty($this->config->getNoRouteRobotsTypes()) && $request->getControllerName() === 'noroute') {
+            $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($this->config->getNoRouteRobotsTypes()));
         }
 
         if ($request->getParam('p') && (int)$request->getParam('p') > 1 && $this->config->isPaginatedRobots() === true) {
             $directives = $this->config->getPaginatedMetaRobots();
-            $pageConfig->setRobots($this->robotsList->buildMetaRobotsFromDirectives($directives));
+            $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($directives));
         }
 
         // Apply custom robots from providers
