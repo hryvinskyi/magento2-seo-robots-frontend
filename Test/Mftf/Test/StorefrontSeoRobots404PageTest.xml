@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontSeoRobots404PageTest">
+        <annotations>
+            <features value="SeoRobotsFrontend"/>
+            <stories value="SEO Robots on 404 Pages"/>
+            <title value="Verify 404 pages have correct robots meta tag"/>
+            <description value="Verify that 404 (not found) pages display the configured robots meta tag when SEO Robots is enabled"/>
+            <severity value="CRITICAL"/>
+            <group value="seo"/>
+            <group value="seo_robots"/>
+            <group value="seo_robots_frontend"/>
+        </annotations>
+
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+            <!-- Navigate to SEO Robots configuration and enable -->
+            <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfig"/>
+            <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSection"/>
+            <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobots">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfig"/>
+            <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCache">
+                <argument name="tags" value=""/>
+            </actionGroup>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+
+        <!-- ============================================== -->
+        <!-- TEST 1: Default configuration (noindex, nofollow) -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to a non-existent page (404) -->
+        <amOnPage url="/non-existent-page-{{_NOW}}" stepKey="goTo404Page"/>
+        <waitForPageLoad stepKey="waitForPageLoad"/>
+
+        <!-- Verify 404 page is displayed -->
+        <see userInput="Whoops" stepKey="see404Message"/>
+
+        <!-- Verify meta robots tag contains noindex -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="assertMetaRobotsContainsNoindex">
+            <argument name="expectedRobots" value="noindex"/>
+        </actionGroup>
+
+        <!-- Verify meta robots tag contains nofollow -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="assertMetaRobotsContainsNofollow">
+            <argument name="expectedRobots" value="nofollow"/>
+        </actionGroup>
+
+        <!-- ============================================== -->
+        <!-- TEST 2: Change to index, follow configuration -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to admin and change 404 robots to index, follow -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest2"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest2"/>
+        <actionGroup ref="AdminSetNoRouteRobotsDirectivesActionGroup" stepKey="setIndexTest2">
+            <argument name="directive" value="index"/>
+        </actionGroup>
+        <actionGroup ref="AdminSetNoRouteRobotsDirectivesActionGroup" stepKey="setFollowTest2">
+            <argument name="directive" value="follow"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest2"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest2">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Navigate to 404 page and verify new configuration -->
+        <amOnPage url="/non-existent-page-test2-{{_NOW}}" stepKey="goTo404PageTest2"/>
+        <waitForPageLoad stepKey="waitForPageLoadTest2"/>
+        <see userInput="Whoops" stepKey="see404MessageTest2"/>
+
+        <!-- Verify meta robots tag contains index -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="assertMetaRobotsContainsIndex">
+            <argument name="expectedRobots" value="index"/>
+        </actionGroup>
+
+        <!-- Verify meta robots tag contains follow -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="assertMetaRobotsContainsFollow">
+            <argument name="expectedRobots" value="follow"/>
+        </actionGroup>
+
+        <!-- ============================================== -->
+        <!-- TEST 3: Change to noindex only configuration -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to admin and change 404 robots to noindex only -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest3"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest3"/>
+        <actionGroup ref="AdminSetNoRouteRobotsDirectivesActionGroup" stepKey="setNoindexOnly">
+            <argument name="directives" value="[{&quot;value&quot;:&quot;noindex&quot;,&quot;bot&quot;:&quot;&quot;,&quot;modification&quot;:&quot;&quot;}]"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest3"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest3">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Navigate to 404 page and verify new configuration -->
+        <amOnPage url="/non-existent-page-test3-{{_NOW}}" stepKey="goTo404PageTest3"/>
+        <waitForPageLoad stepKey="waitForPageLoadTest3"/>
+        <see userInput="Whoops" stepKey="see404MessageTest3"/>
+
+        <!-- Verify meta robots tag contains noindex -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="assertMetaRobotsNoindexOnly">
+            <argument name="expectedRobots" value="noindex"/>
+        </actionGroup>
+    </test>
+</tests>

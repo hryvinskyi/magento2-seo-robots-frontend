@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontSeoRobotsXRobotsHeader404PageTest">
+        <annotations>
+            <features value="SeoRobotsFrontend"/>
+            <stories value="X-Robots-Tag HTTP Header on 404 Pages"/>
+            <title value="Verify 404 pages have X-Robots-Tag header"/>
+            <description value="Verify that 404 (not found) pages include the X-Robots-Tag HTTP header when SEO Robots is enabled"/>
+            <severity value="CRITICAL"/>
+            <group value="seo"/>
+            <group value="seo_robots"/>
+            <group value="seo_robots_frontend"/>
+        </annotations>
+
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+            <!-- Navigate to SEO Robots configuration and enable -->
+            <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfig"/>
+            <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSection"/>
+            <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobots">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminSetXRobotsHeaderEnabledActionGroup" stepKey="enableXRobotsHeader">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminConfigurationSetInheritActionGroup" stepKey="setInheritValue">
+                <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsNoRouteTypesRow}}"/>
+            </actionGroup>
+            <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfig"/>
+            <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCache">
+                <argument name="tags" value=""/>
+            </actionGroup>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+
+        <!-- ============================================== -->
+        <!-- TEST 1: Default configuration (noindex, nofollow) -->
+        <!-- ============================================== -->
+
+        <!-- Verify X-Robots-Tag header exists on 404 page -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assert404XRobotsTagHeader" stepKey="verify404XRobotsHeader">
+            <argument name="url">/non-existent-page-mftf-test</argument>
+        </helper>
+
+        <!-- Verify X-Robots-Tag header contains noindex -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assert404XRobotsTagHeaderContains" stepKey="verify404XRobotsHeaderNoindex">
+            <argument name="url">/non-existent-page-mftf-test</argument>
+            <argument name="expectedValue">noindex</argument>
+        </helper>
+
+        <!-- Verify X-Robots-Tag header contains nofollow -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assert404XRobotsTagHeaderContains" stepKey="verify404XRobotsHeaderNofollow">
+            <argument name="url">/non-existent-page-mftf-test</argument>
+            <argument name="expectedValue">nofollow</argument>
+        </helper>
+
+        <!-- ============================================== -->
+        <!-- TEST 2: Change to index, follow configuration -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to admin and change 404 X-Robots to index, follow -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest2"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest2"/>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setIndexTest2">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsNoRouteTypesRow}}"/>
+            <argument name="directive" value="index"/>
+        </actionGroup>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setFollowTest2">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsNoRouteTypesRow}}"/>
+            <argument name="directive" value="follow"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest2"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest2">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header contains index -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assert404XRobotsTagHeaderContains" stepKey="verify404XRobotsHeaderIndex">
+            <argument name="url">/non-existent-page-mftf-test2</argument>
+            <argument name="expectedValue">index</argument>
+        </helper>
+
+        <!-- Verify X-Robots-Tag header contains follow -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assert404XRobotsTagHeaderContains" stepKey="verify404XRobotsHeaderFollow">
+            <argument name="url">/non-existent-page-mftf-test2</argument>
+            <argument name="expectedValue">follow</argument>
+        </helper>
+
+        <!-- ============================================== -->
+        <!-- TEST 3: Change to noindex only configuration -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to admin and change 404 X-Robots to noindex only -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest3"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest3"/>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setNoindexOnly">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsNoRouteTypesRow}}"/>
+            <argument name="directive" value="noindex"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest3"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest3">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header contains noindex -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assert404XRobotsTagHeaderContains" stepKey="verify404XRobotsHeaderNoindexOnly">
+            <argument name="url">/non-existent-page-mftf-test3</argument>
+            <argument name="expectedValue">noindex</argument>
+        </helper>
+
+        <!-- ============================================== -->
+        <!-- TEST 4: Disable X-Robots-Tag Header -->
+        <!-- ============================================== -->
+
+        <!-- Disable X-Robots-Tag Header -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigDisable"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionDisable"/>
+        <actionGroup ref="AdminSetXRobotsHeaderEnabledActionGroup" stepKey="disableXRobotsHeader">
+            <argument name="enabled" value="0"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigDisable"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheDisable">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header is NOT present on 404 page when disabled -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assert404XRobotsTagHeader" stepKey="verify404XRobotsHeaderDisabled">
+            <argument name="url">/non-existent-page-mftf-test</argument>
+            <argument name="isTrue">false</argument>
+        </helper>
+    </test>
+</tests>

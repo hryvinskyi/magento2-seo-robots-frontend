@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<actionGroups xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/actionGroupSchema.xsd">
+    <actionGroup name="StorefrontAssertNoMetaRobotsTagActionGroup">
+        <annotations>
+            <description>Asserts that no meta robots tag is present on the page.</description>
+        </annotations>
+
+        <!-- Use executeJS to check DOM since meta tags are not visible elements -->
+        <executeJS function="return document.querySelector('meta[name=\'robots\']') === null;" stepKey="checkNoMetaRobotsTag"/>
+        <assertTrue stepKey="assertNoMetaRobotsTag">
+            <actualResult type="variable">checkNoMetaRobotsTag</actualResult>
+        </assertTrue>
+    </actionGroup>
+</actionGroups>

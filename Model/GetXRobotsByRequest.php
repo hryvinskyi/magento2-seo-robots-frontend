@@ -57,7 +57,7 @@ class GetXRobotsByRequest implements GetXRobotsByRequestInterface
 
         // Check for paginated content using URL query params directly
         $queryParams = $this->request->getQuery()->toArray();
-        if (isset($queryParams['p']) && (int)$queryParams['p'] > 1) {
+        if (isset($queryParams['p'])) {
             // Pagination only (no filters) - 'p' is the only query parameter
             if (count($queryParams) === 1 && $this->config->isXRobotsPaginatedEnabled()) {
                 $paginatedDirectives = $this->config->getPaginatedXRobots();

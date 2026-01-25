@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<actionGroups xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/actionGroupSchema.xsd">
+    <actionGroup name="StorefrontAssertMetaRobotsActionGroup">
+        <annotations>
+            <description>Asserts that the meta robots tag contains the expected value.</description>
+        </annotations>
+        <arguments>
+            <argument name="expectedRobots" type="string"/>
+        </arguments>
+
+        <!-- Use executeJS to get meta tag content since meta tags are not visible elements -->
+        <!-- Convert to lowercase for case-insensitive comparison -->
+        <executeJS function="return document.querySelector('meta[name=\'robots\']') ? document.querySelector('meta[name=\'robots\']').getAttribute('content').toLowerCase() : null;" stepKey="grabRobotsContent"/>
+        <assertNotNull stepKey="assertMetaRobotsExists">
+            <actualResult type="variable">grabRobotsContent</actualResult>
+        </assertNotNull>
+        <assertStringContainsString message="Meta robots tag should contain '{{expectedRobots}}'" stepKey="assertRobotsContent">
+            <expectedResult type="string">{{expectedRobots}}</expectedResult>
+            <actualResult type="variable">grabRobotsContent</actualResult>
+        </assertStringContainsString>
+    </actionGroup>
+</actionGroups>

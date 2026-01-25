@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontSeoRobotsDisabledTest">
+        <annotations>
+            <features value="SeoRobotsFrontend"/>
+            <stories value="SEO Robots Module Disabled"/>
+            <title value="Verify robots are not modified when module is disabled"/>
+            <description value="Verify that when SEO Robots module is disabled, Magento's default robots configuration is used"/>
+            <severity value="CRITICAL"/>
+            <group value="seo"/>
+            <group value="seo_robots"/>
+            <group value="seo_robots_frontend"/>
+        </annotations>
+
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+
+            <!-- Reset Magento's default robots to NOINDEX,NOFOLLOW -->
+            <magentoCLI stepKey="resetDefaultRobots" command="config:set design/search_engine_robots/default_robots NOINDEX,NOFOLLOW"/>
+
+            <!-- Navigate to SEO Robots configuration and disable -->
+            <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfig"/>
+            <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSection"/>
+            <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="disableSeoRobots">
+                <argument name="enabled" value="0"/>
+            </actionGroup>
+            <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfig"/>
+
+            <magentoCLI stepKey="setFlatCatalogCategory" command="config:set catalog/frontend/flat_catalog_category 1 "/>
+            <magentoCLI stepKey="setFlatCatalogProduct" command="config:set catalog/frontend/flat_catalog_product 1 "/>
+            <createData entity="_defaultCategory" stepKey="createDefaultCategory"/>
+            <createData entity="SimpleProduct" stepKey="createSimpleProduct">
+                <requiredEntity createDataKey="createDefaultCategory"/>
+            </createData>
+
+            <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCache">
+                <argument name="tags" value=""/>
+            </actionGroup>
+        </before>
+        <after>
+            <!-- Reset Magento's default robots to INDEX,FOLLOW -->
+            <magentoCLI stepKey="resetDefaultRobots" command="config:set design/search_engine_robots/default_robots INDEX,FOLLOW"/>
+
+            <!-- Re-enable SEO Robots module for other tests -->
+            <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigAgain"/>
+            <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionAgain"/>
+            <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobots">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigAgain"/>
+
+            <magentoCLI stepKey="setFlatCatalogCategory" command="config:set catalog/frontend/flat_catalog_category 0" />
+            <magentoCLI stepKey="setFlatCatalogProduct" command="config:set catalog/frontend/flat_catalog_product 0" />
+            <deleteData createDataKey="createSimpleProduct" stepKey="deleteSimpleProduct"/>
+            <deleteData createDataKey="createDefaultCategory" stepKey="deleteCategory"/>
+
+            <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheAfter">
+                <argument name="tags" value=""/>
+            </actionGroup>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+
+        <!-- ============================================== -->
+        <!-- TEST 1: Verify homepage uses Magento's default robots -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to homepage -->
+        <amOnPage url="{{StorefrontHomePage.url}}" stepKey="goToHomepage"/>
+        <waitForPageLoad stepKey="waitForPageLoad"/>
+
+        <!-- Verify Magento's default robots (NOINDEX,NOFOLLOW) is used -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyHomepageNoindex">
+            <argument name="expectedRobots" value="noindex"/>
+        </actionGroup>
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyHomepageNofollow">
+            <argument name="expectedRobots" value="nofollow"/>
+        </actionGroup>
+
+        <!-- ============================================== -->
+        <!-- TEST 2: Verify category page uses Magento's default robots -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to category page -->
+        <amOnPage url="{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}" stepKey="goToCategoryPage"/>
+        <waitForPageLoad stepKey="waitForCategoryPageLoad"/>
+
+        <!-- Verify Magento's default robots (NOINDEX,NOFOLLOW) is used -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyCategoryNoindex">
+            <argument name="expectedRobots" value="noindex"/>
+        </actionGroup>
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyCategoryNofollow">
+            <argument name="expectedRobots" value="nofollow"/>
+        </actionGroup>
+
+        <!-- ============================================== -->
+        <!-- TEST 3: Verify product page uses Magento's default robots -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to product page -->
+        <amOnPage url="{{StorefrontProductPage.url($$createSimpleProduct.custom_attributes[url_key]$$)}}" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPageLoad"/>
+
+        <!-- Verify Magento's default robots (NOINDEX,NOFOLLOW) is used -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyProductNoindex">
+            <argument name="expectedRobots" value="noindex"/>
+        </actionGroup>
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyProductNofollow">
+            <argument name="expectedRobots" value="nofollow"/>
+        </actionGroup>
+
+        <!-- Reset Magento's default robots to empty -->
+        <magentoCLI stepKey="resetDefaultRobots" command="config:set design/search_engine_robots/default_robots ''"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest3">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- ============================================== -->
+        <!-- TEST 4: Verify homepage uses Magento's empty robots -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to homepage -->
+        <amOnPage url="{{StorefrontHomePage.url}}" stepKey="goToHomepage2"/>
+        <waitForPageLoad stepKey="waitForPageLoad2"/>
+
+        <!-- Verify Magento's empty robots is used -->
+        <actionGroup ref="StorefrontAssertNoMetaRobotsTagActionGroup" stepKey="verifyFirstPageNoNoindex"/>
+
+        <!-- ============================================== -->
+        <!-- TEST 5: Verify category page uses Magento's empty robots -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to category page -->
+        <amOnPage url="{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}" stepKey="goToCategoryPage2"/>
+        <waitForPageLoad stepKey="waitForCategoryPageLoad2"/>
+
+        <!-- Verify Magento's empty robots is used -->
+        <actionGroup ref="StorefrontAssertNoMetaRobotsTagActionGroup" stepKey="verifyCategoryPageNoNoindex2"/>
+
+        <!-- ============================================== -->
+        <!-- TEST 6: Verify product page uses Magento's default robots -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to product page -->
+        <amOnPage url="{{StorefrontProductPage.url($$createSimpleProduct.custom_attributes[url_key]$$)}}" stepKey="goToProductPage2"/>
+        <waitForPageLoad stepKey="waitForProductPageLoad2"/>
+
+        <!-- Verify Magento's empty robots is used -->
+        <actionGroup ref="StorefrontAssertNoMetaRobotsTagActionGroup" stepKey="verifyProductPageNoNoindex2"/>
+
+        <!-- ============================================== -->
+        <!-- TEST 7: Change Magento's default robots and verify -->
+        <!-- ============================================== -->
+
+        <!-- Change Magento's default robots to INDEX,FOLLOW -->
+        <magentoCLI stepKey="setDefaultRobotsIndex" command="config:set design/search_engine_robots/default_robots INDEX,FOLLOW"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest4">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Navigate to homepage -->
+        <amOnPage url="{{StorefrontHomePage.url}}" stepKey="goToHomepageTest4"/>
+        <waitForPageLoad stepKey="waitForPageLoadTest4"/>
+
+        <!-- Verify Magento's new default robots (INDEX,FOLLOW) is used -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyHomepageIndex">
+            <argument name="expectedRobots" value="index"/>
+        </actionGroup>
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyHomepageFollow">
+            <argument name="expectedRobots" value="follow"/>
+        </actionGroup>
+
+        <!-- ============================================== -->
+        <!-- TEST 8: Enable module and verify it overrides default -->
+        <!-- ============================================== -->
+
+        <!-- Enable SEO Robots module -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest5"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest5"/>
+        <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobotsTest5">
+            <argument name="enabled" value="1"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest5"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest5">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Navigate to homepage -->
+        <amOnPage url="{{StorefrontHomePage.url}}" stepKey="goToHomepageTest5"/>
+        <waitForPageLoad stepKey="waitForPageLoadTest5"/>
+
+        <!-- Verify module is now controlling robots (should still be INDEX,FOLLOW by default) -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyEnabledIndex">
+            <argument name="expectedRobots" value="index"/>
+        </actionGroup>
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyEnabledFollow">
+            <argument name="expectedRobots" value="follow"/>
+        </actionGroup>
+
+        <!-- ============================================== -->
+        <!-- TEST 9: Disable module again and verify Magento default is restored -->
+        <!-- ============================================== -->
+
+        <!-- Disable SEO Robots module -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest6"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest6"/>
+        <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="disableSeoRobotsTest6">
+            <argument name="enabled" value="0"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest6"/>
+
+        <!-- Change Magento's default robots to NOINDEX,FOLLOW -->
+        <magentoCLI stepKey="setDefaultRobotsNoindexFollow" command="config:set design/search_engine_robots/default_robots NOINDEX,FOLLOW"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest6">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Navigate to homepage -->
+        <amOnPage url="{{StorefrontHomePage.url}}" stepKey="goToHomepageTest6"/>
+        <waitForPageLoad stepKey="waitForPageLoadTest6"/>
+
+        <!-- Verify Magento's default robots (NOINDEX,FOLLOW) is used when module is disabled -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyDisabledNoindex">
+            <argument name="expectedRobots" value="noindex"/>
+        </actionGroup>
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="verifyDisabledFollow">
+            <argument name="expectedRobots" value="follow"/>
+        </actionGroup>
+    </test>
+</tests>

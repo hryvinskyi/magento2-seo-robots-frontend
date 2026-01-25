@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontSeoRobotsCategoryPageTest">
+        <annotations>
+            <features value="SeoRobotsFrontend"/>
+            <stories value="SEO Robots on Category Pages"/>
+            <title value="Verify category pages display robots meta tag"/>
+            <description value="Verify that category pages display the robots meta tag when SEO Robots module is enabled"/>
+            <severity value="MAJOR"/>
+            <group value="seo"/>
+            <group value="seo_robots"/>
+            <group value="seo_robots_frontend"/>
+        </annotations>
+
+        <before>
+            <createData entity="SimpleSubCategory" stepKey="createCategory"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+            <!-- Navigate to SEO Robots configuration and enable -->
+            <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfig"/>
+            <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSection"/>
+            <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobots">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfig"/>
+            <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCache">
+                <argument name="tags" value=""/>
+            </actionGroup>
+        </before>
+        <after>
+            <deleteData createDataKey="createCategory" stepKey="deleteCategory"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+
+        <!-- Navigate to the created category page -->
+        <amOnPage url="{{StorefrontCategoryPage.url($$createCategory.custom_attributes[url_key]$$)}}" stepKey="goToCategoryPage"/>
+        <waitForPageLoad stepKey="waitForPageLoad"/>
+
+        <!-- Verify meta robots tag exists on category page with expected content -->
+        <actionGroup ref="StorefrontAssertMetaRobotsActionGroup" stepKey="seeMetaRobotsTag">
+            <argument name="expectedRobots" value="index"/>
+        </actionGroup>
+    </test>
+</tests>

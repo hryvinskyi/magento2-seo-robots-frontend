@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontSeoRobotsXRobotsHeaderPaginatedPageTest">
+        <annotations>
+            <features value="SeoRobotsFrontend"/>
+            <stories value="X-Robots-Tag HTTP Header on Paginated Pages"/>
+            <title value="Verify paginated pages have X-Robots-Tag header"/>
+            <description value="Verify that paginated category pages (page 2+) include the X-Robots-Tag HTTP header when SEO Robots is enabled"/>
+            <severity value="CRITICAL"/>
+            <group value="seo"/>
+            <group value="seo_robots"/>
+            <group value="seo_robots_frontend"/>
+        </annotations>
+
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+            <!-- Navigate to SEO Robots configuration and enable -->
+            <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfig"/>
+            <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSection"/>
+            <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobots">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminSetXRobotsHeaderEnabledActionGroup" stepKey="enableXRobotsHeader">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminSetXRobotsPaginatedEnabledActionGroup" stepKey="enableXRobotsPaginated">
+                <argument name="enabled" value="1"/>
+            </actionGroup>
+            <actionGroup ref="AdminConfigurationSetInheritActionGroup" stepKey="setInheritValue">
+                <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsPaginatedTypesRow}}"/>
+            </actionGroup>
+            <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfig"/>
+
+            <magentoCLI stepKey="setFlatCatalogCategory" command="config:set catalog/frontend/flat_catalog_category 1 "/>
+            <magentoCLI stepKey="setFlatCatalogProduct" command="config:set catalog/frontend/flat_catalog_product 1 "/>
+            <createData entity="_defaultCategory" stepKey="createDefaultCategory"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct1"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct2"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct3"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct4"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct5"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct6"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct7"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct8"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct9"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct10"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct11"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct12"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct13"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct14"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct15"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct16"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct17"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct18"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct19"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct20"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct21"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct22"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct23"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct24"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct25"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct26"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct27"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct28"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct29"/>
+            <createData entity="_defaultProduct" stepKey="simpleProduct30"/>
+            <!-- Reindex invalidated indices after products has been created/deleted -->
+            <actionGroup ref="CliIndexerReindexActionGroup" stepKey="reindexInvalidatedIndices">
+                <argument name="indices" value=""/>
+            </actionGroup>
+            <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCache">
+                <argument name="tags" value=""/>
+            </actionGroup>
+        </before>
+        <after>
+            <magentoCLI stepKey="setFlatCatalogCategory" command="config:set catalog/frontend/flat_catalog_category 0" />
+            <magentoCLI stepKey="setFlatCatalogProduct" command="config:set catalog/frontend/flat_catalog_product 0" />
+            <deleteData createDataKey="createDefaultCategory" stepKey="deleteCategory"/>
+            <deleteData createDataKey="simpleProduct1" stepKey="deleteSimpleProduct1"/>
+            <deleteData createDataKey="simpleProduct2" stepKey="deleteSimpleProduct2"/>
+            <deleteData createDataKey="simpleProduct3" stepKey="deleteSimpleProduct3"/>
+            <deleteData createDataKey="simpleProduct4" stepKey="deleteSimpleProduct4"/>
+            <deleteData createDataKey="simpleProduct5" stepKey="deleteSimpleProduct5"/>
+            <deleteData createDataKey="simpleProduct6" stepKey="deleteSimpleProduct6"/>
+            <deleteData createDataKey="simpleProduct7" stepKey="deleteSimpleProduct7"/>
+            <deleteData createDataKey="simpleProduct8" stepKey="deleteSimpleProduct8"/>
+            <deleteData createDataKey="simpleProduct9" stepKey="deleteSimpleProduct9"/>
+            <deleteData createDataKey="simpleProduct10" stepKey="deleteSimpleProduct10"/>
+            <deleteData createDataKey="simpleProduct11" stepKey="deleteSimpleProduct11"/>
+            <deleteData createDataKey="simpleProduct12" stepKey="deleteSimpleProduct12"/>
+            <deleteData createDataKey="simpleProduct13" stepKey="deleteSimpleProduct13"/>
+            <deleteData createDataKey="simpleProduct14" stepKey="deleteSimpleProduct14"/>
+            <deleteData createDataKey="simpleProduct15" stepKey="deleteSimpleProduct15"/>
+            <deleteData createDataKey="simpleProduct16" stepKey="deleteSimpleProduct16"/>
+            <deleteData createDataKey="simpleProduct17" stepKey="deleteSimpleProduct17"/>
+            <deleteData createDataKey="simpleProduct18" stepKey="deleteSimpleProduct18"/>
+            <deleteData createDataKey="simpleProduct19" stepKey="deleteSimpleProduct19"/>
+            <deleteData createDataKey="simpleProduct20" stepKey="deleteSimpleProduct20"/>
+            <deleteData createDataKey="simpleProduct21" stepKey="deleteSimpleProduct21"/>
+            <deleteData createDataKey="simpleProduct22" stepKey="deleteSimpleProduct22"/>
+            <deleteData createDataKey="simpleProduct23" stepKey="deleteSimpleProduct23"/>
+            <deleteData createDataKey="simpleProduct24" stepKey="deleteSimpleProduct24"/>
+            <deleteData createDataKey="simpleProduct25" stepKey="deleteSimpleProduct25"/>
+            <deleteData createDataKey="simpleProduct26" stepKey="deleteSimpleProduct26"/>
+            <deleteData createDataKey="simpleProduct27" stepKey="deleteSimpleProduct27"/>
+            <deleteData createDataKey="simpleProduct28" stepKey="deleteSimpleProduct28"/>
+            <deleteData createDataKey="simpleProduct29" stepKey="deleteSimpleProduct29"/>
+            <deleteData createDataKey="simpleProduct30" stepKey="deleteSimpleProduct30"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+        <!-- ============================================== -->
+        <!-- TEST 1: Default configuration (index, follow) -->
+        <!-- ============================================== -->
+
+        <!-- Verify X-Robots-Tag header exists on paginated page -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeader" stepKey="verifyPaginatedXRobotsHeader">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}?p=2</argument>
+        </helper>
+
+        <!-- Verify X-Robots-Tag header contains noindex -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeaderContains" stepKey="verifyPaginatedXRobotsHeaderNoindex">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}?p=2</argument>
+            <argument name="expectedValue">index</argument>
+        </helper>
+
+        <!-- Verify X-Robots-Tag header contains nofollow -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeaderContains" stepKey="verifyPaginatedXRobotsHeaderNofollow">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}?p=2</argument>
+            <argument name="expectedValue">follow</argument>
+        </helper>
+
+        <!-- ============================================== -->
+        <!-- TEST 2: Change to noindex, nofollow configuration -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to admin and change X-Robots paginated to noindex, nofollow -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest2"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest2"/>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setNoIndexTest2">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsPaginatedTypesRow}}"/>
+            <argument name="directive" value="noindex"/>
+        </actionGroup>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setNoFollowTest2">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsPaginatedTypesRow}}"/>
+            <argument name="directive" value="nofollow"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest2"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest2">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header contains noindex -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeaderContains" stepKey="verifyPaginatedXRobotsHeaderNoIndex">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}?p=2</argument>
+            <argument name="expectedValue">noindex</argument>
+        </helper>
+
+        <!-- Verify X-Robots-Tag header contains nofollow -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeaderContains" stepKey="verifyPaginatedXRobotsHeaderNoFollow">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}?p=2</argument>
+            <argument name="expectedValue">nofollow</argument>
+        </helper>
+
+        <!-- ============================================== -->
+        <!-- TEST 3: Change to all only configuration -->
+        <!-- ============================================== -->
+
+        <!-- Navigate to admin and change X-Robots paginated to all only -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest3"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest3"/>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setAllOnly">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsPaginatedTypesRow}}"/>
+            <argument name="directive" value="all"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest3"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest3">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header contains all -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeaderContains" stepKey="verifyPaginatedXRobotsHeaderAllOnly">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}?p=2</argument>
+            <argument name="expectedValue">all</argument>
+        </helper>
+
+        <!-- ============================================== -->
+        <!-- TEST 4: Disable X-Robots-Tag Paginated -->
+        <!-- ============================================== -->
+
+        <!-- Disable X-Robots-Tag Paginated -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigDisable"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionDisable"/>
+        <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="disableSeoRobots4">
+            <argument name="enabled" value="0"/>
+        </actionGroup>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setAllOnly4">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsPaginatedTypesRow}}"/>
+            <argument name="directive" value="all"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigDisable1"/>
+        <actionGroup ref="AdminSetXRobotsPaginatedEnabledActionGroup" stepKey="disableXRobotsPaginated">
+            <argument name="enabled" value="0"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigDisable2"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheDisable">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header is NOT present on paginated page when disabled -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeader" stepKey="verifyPaginatedXRobotsHeaderDisabled">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}?p=2</argument>
+            <argument name="headerExist">true</argument>
+            <argument name="headerValue">INDEX,FOLLOW</argument>
+        </helper>
+
+        <!-- ============================================== -->
+        <!-- TEST 5: Verify page 1 does NOT have X-Robots paginated header -->
+        <!-- ============================================== -->
+
+        <!-- Re-enable X-Robots Paginated for this test -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigTest5"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionTest5"/>
+        <actionGroup ref="AdminSetXRobotsPaginatedEnabledActionGroup" stepKey="enableXRobotsPaginatedTest5">
+            <argument name="enabled" value="1"/>
+        </actionGroup>
+        <actionGroup ref="AdminConfigurationSetDirectiveActionGroup" stepKey="setAllOnly5">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsPaginatedTypesRow}}"/>
+            <argument name="directive" value="all"/>
+        </actionGroup>
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigTest5"/>
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheTest5">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify page 1 does NOT have X-Robots-Tag header from pagination setting -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeader" stepKey="verifyFirstPageNoXRobotsHeader">
+            <argument name="url">{{StorefrontCategoryPage.url($$createDefaultCategory.custom_attributes[url_key]$$)}}</argument>
+            <argument name="headerExist">true</argument>
+            <argument name="headerValue">INDEX,FOLLOW</argument>
+        </helper>
+    </test>
+</tests>

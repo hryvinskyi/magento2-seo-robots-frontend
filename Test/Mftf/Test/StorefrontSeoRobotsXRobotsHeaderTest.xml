@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+  * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+  * GitHub: https://github.com/hryvinskyi
+  */
+-->
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="StorefrontSeoRobotsXRobotsHeaderTest">
+        <annotations>
+            <features value="SeoRobotsFrontend"/>
+            <stories value="X-Robots-Tag HTTP Header"/>
+            <title value="Verify X-Robots-Tag header can be enabled"/>
+            <description value="Verify that when X-Robots-Tag header is enabled, the configuration can be saved successfully"/>
+            <severity value="MAJOR"/>
+            <group value="seo"/>
+            <group value="seo_robots"/>
+            <group value="seo_robots_frontend"/>
+        </annotations>
+
+        <before>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logout"/>
+        </after>
+
+        <!-- Navigate to SEO Robots configuration -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfig"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSection"/>
+
+        <!-- Enable SEO Robots Management -->
+        <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobots">
+            <argument name="enabled" value="1"/>
+        </actionGroup>
+
+        <!-- Enable X-Robots-Tag Header -->
+        <actionGroup ref="AdminSetXRobotsHeaderEnabledActionGroup" stepKey="enableXRobotsHeader">
+            <argument name="enabled" value="1"/>
+        </actionGroup>
+
+        <!-- Set Inherit Configuration -->
+        <actionGroup ref="AdminConfigurationSetInheritActionGroup" stepKey="setInheritValue">
+            <argument name="rowId" value="{{AdminSeoRobotsConfigSection.xRobotsNoRouteTypesRow}}"/>
+        </actionGroup>
+
+        <!-- Save configuration -->
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfig"/>
+
+        <!-- Verify the settings are saved -->
+        <actionGroup ref="AdminNavigateToSeoRobotsConfigActionGroup" stepKey="navigateToConfigAgain"/>
+        <actionGroup ref="AdminExpandSeoRobotsSectionActionGroup" stepKey="expandSectionAgain"/>
+        <seeOptionIsSelected selector="{{AdminSeoRobotsConfigSection.enabledField}}" userInput="Yes" stepKey="verifyEnabled"/>
+        <seeOptionIsSelected selector="{{AdminSeoRobotsConfigSection.xRobotsHeaderEnabled}}" userInput="Yes" stepKey="verifyXRobotsEnabled"/>
+
+        <!-- Flush cache to apply configuration -->
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCache">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header on frontend -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeader" stepKey="verifyXRobotsHeader">
+            <argument name="url">{{StorefrontHomePage.url}}</argument>
+        </helper>
+
+        <!-- Disable X-Robots-Tag Header -->
+        <actionGroup ref="AdminSetXRobotsHeaderEnabledActionGroup" stepKey="disableXRobotsHeader">
+            <argument name="enabled" value="0"/>
+        </actionGroup>
+
+        <!-- Save configuration -->
+        <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfigDisable"/>
+
+        <!-- Flush cache to apply configuration -->
+        <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCacheDisable">
+            <argument name="tags" value=""/>
+        </actionGroup>
+
+        <!-- Verify X-Robots-Tag header on frontend -->
+        <helper class="\Hryvinskyi\SeoRobotsFrontend\Test\Mftf\Helper\HttpHeaderHelper" method="assertXRobotsTagHeader" stepKey="verifyXRobotsHeaderDisable">
+            <argument name="url">{{StorefrontHomePage.url}}</argument>
+            <argument name="headerExist">false</argument>
+        </helper>
+    </test>
+</tests>
