@@ -13,9 +13,18 @@ use Magento\Framework\App\HttpRequestInterface;
 interface GetRobotsByRequestInterface
 {
     /**
-     * @param HttpRequestInterface $request
+     * Get robots value based on URL patterns
      *
-     * @return string
+     * @param HttpRequestInterface $request
+     * @return string|null
      */
     public function execute(HttpRequestInterface $request): ?string;
+
+    /**
+     * Get robots result with priority from URL pattern configuration
+     *
+     * @param HttpRequestInterface $request
+     * @return RobotsResult|null Returns RobotsResult with robots value and its configured priority, or null if no match
+     */
+    public function executeWithPriority(HttpRequestInterface $request): ?RobotsResult;
 }

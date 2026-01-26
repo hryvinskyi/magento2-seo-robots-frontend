@@ -9,24 +9,27 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\SeoRobotsFrontend\Model;
 
-use Hryvinskyi\SeoApi\Api\CheckPatternInterface;
-use Hryvinskyi\SeoApi\Api\GetBaseUrlInterface;
-use Hryvinskyi\SeoRobotsApi\Api\ConfigInterface;
 use Magento\Framework\App\RequestInterface;
-use Magento\Store\Model\StoreManagerInterface;
 
 /**
- * Get X-Robots-Tag directives based on independent rules
+ * Get X-Robots-Tag directives based on priority from all registered providers
  */
 class GetXRobotsByRequest implements GetXRobotsByRequestInterface
 {
+    /**
+     * @var array<XRobotsProviderInterface>
+     */
+    private array $sortedProviders;
+
+    /**
+     * @param RequestInterface $request
+     * @param array<XRobotsProviderInterface> $xrobotsProviders
+     */
     public function __construct(
-        private readonly ConfigInterface $config,
-        private readonly CheckPatternInterface $checkPattern,
-        private readonly GetBaseUrlInterface $baseUrl,
         private readonly RequestInterface $request,
-        private readonly StoreManagerInterface $storeManager
+        array $xrobotsProviders = []
     ) {
+        $this->sortedProviders = $this->sortProviders($xrobotsProviders);
     }
 
     /**
@@ -34,83 +37,35 @@ class GetXRobotsByRequest implements GetXRobotsByRequestInterface
      */
     public function execute(): array
     {
-        // Check HTTPS X-Robots directives first
-        if ($this->storeManager->getStore()->isCurrentlySecure()) {
-            $httpsDirectives = $this->config->getHttpsXRobotsDirectives();
-            if (!empty($httpsDirectives)) {
-                return $httpsDirectives;
-            }
-        }
+        $highestPriority = null;
+        $winningDirectives = null;
 
-        // Check for 404 pages (noroute controller)
-        if ($this->request->getControllerName() === 'noroute') {
-            $noRouteDirectives = $this->config->getNoRouteXRobotsTypes();
-            if (!empty($noRouteDirectives)) {
-                return $noRouteDirectives;
-            }
-            // Fall back to meta robots 404 directives if no specific X-Robots set
-            $metaNoRouteDirectives = $this->config->getNoRouteRobotsTypes();
-            if (!empty($metaNoRouteDirectives)) {
-                return $metaNoRouteDirectives;
-            }
-        }
-
-        // Check for paginated content using URL query params directly
-        $queryParams = $this->request->getQuery()->toArray();
-        if (isset($queryParams['p'])) {
-            // Pagination only (no filters) - 'p' is the only query parameter
-            if (count($queryParams) === 1 && $this->config->isXRobotsPaginatedEnabled()) {
-                $paginatedDirectives = $this->config->getPaginatedXRobots();
-                if (!empty($paginatedDirectives)) {
-                    return $paginatedDirectives;
-                }
-                // Fall back to meta robots paginated directives if no specific X-Robots set
-                if ($this->config->isPaginatedRobots()) {
-                    $metaPaginatedDirectives = $this->config->getPaginatedMetaRobots();
-                    if (!empty($metaPaginatedDirectives)) {
-                        return $metaPaginatedDirectives;
-                    }
-                }
-            }
-            // Pagination with filters - 'p' plus other query parameters
-            elseif (count($queryParams) > 1 && $this->config->isXRobotsPaginatedFilteredEnabled()) {
-                $filteredDirectives = $this->config->getPaginatedFilteredXRobots();
-                if (!empty($filteredDirectives)) {
-                    return $filteredDirectives;
-                }
-                // Fall back to meta robots paginated filtered directives if no specific X-Robots set
-                if ($this->config->isPaginatedFilteredRobots()) {
-                    $metaFilteredDirectives = $this->config->getPaginatedFilteredMetaRobots();
-                    if (!empty($metaFilteredDirectives)) {
-                        return $metaFilteredDirectives;
-                    }
+        foreach ($this->sortedProviders as $provider) {
+            $directives = $provider->getDirectives($this->request);
+            if ($directives !== null) {
+                $priority = $provider->getPriority();
+                if ($highestPriority === null || $priority > $highestPriority) {
+                    $highestPriority = $priority;
+                    $winningDirectives = $directives;
                 }
             }
         }
 
+        return $winningDirectives ?? [];
+    }
 
-        // Get independent X-Robots rules
-        $xrobotsRules = $this->config->getXRobotsRules();
-
-        if (empty($xrobotsRules)) {
-            return [];
-        }
-
-        $fullAction = $this->request->getFullActionName();
-
-        // Sort by priority (highest first)
-        usort($xrobotsRules, static function ($a, $b) {
-            return ($b['priority'] ?? 0) <=> ($a['priority'] ?? 0);
+    /**
+     * Sort providers by sort order (lower executes first)
+     *
+     * @param array<XRobotsProviderInterface> $providers
+     * @return array<XRobotsProviderInterface>
+     */
+    private function sortProviders(array $providers): array
+    {
+        usort($providers, static function (XRobotsProviderInterface $a, XRobotsProviderInterface $b): int {
+            return $a->getSortOrder() <=> $b->getSortOrder();
         });
 
-        foreach ($xrobotsRules as $rule) {
-            if ($this->checkPattern->execute($fullAction, $rule['pattern'] ?? '')
-                || $this->checkPattern->execute($this->baseUrl->execute(), $rule['pattern'] ?? '')
-            ) {
-                return $rule['xrobots_directives'] ?? [];
-            }
-        }
-
-        return [];
+        return $providers;
     }
 }

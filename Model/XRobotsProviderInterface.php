@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2025. All rights reserved.
+ * Copyright (c) 2026. All rights reserved.
  * @author: Volodymyr Hryvinskyi <mailto:volodymyr@hryvinskyi.com>
  */
 
@@ -8,24 +8,24 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\SeoRobotsFrontend\Model;
 
-use Magento\Framework\App\HttpRequestInterface;
+use Magento\Framework\App\RequestInterface;
 
 /**
- * Interface for robots meta tag providers
+ * Interface for X-Robots-Tag HTTP header providers
  *
- * Implement this interface to provide custom robots meta tags based on specific conditions.
- * Providers are executed in order of their sortOrder, but the final robots value is determined
+ * Implement this interface to provide custom X-Robots-Tag directives based on specific conditions.
+ * Providers are executed in order of their sortOrder, but the final directives are determined
  * by priority - highest priority wins regardless of execution order.
  */
-interface RobotsProviderInterface
+interface XRobotsProviderInterface
 {
     /**
-     * Get robots meta tag value
+     * Get X-Robots-Tag directives
      *
-     * @param HttpRequestInterface $request
-     * @return string|null Return robots meta tag string (e.g., "NOINDEX,NOFOLLOW") or null if not applicable
+     * @param RequestInterface $request
+     * @return array<array{value: string}>|null Return array of directives or null if not applicable
      */
-    public function getRobots(HttpRequestInterface $request): ?string;
+    public function getDirectives(RequestInterface $request): ?array;
 
     /**
      * Get the sort order for this provider
@@ -40,7 +40,7 @@ interface RobotsProviderInterface
      * Get the priority for this provider
      *
      * Higher numbers have higher priority and will override lower priority results.
-     * When multiple providers return robots values, the one with highest priority wins.
+     * When multiple providers return directives, the one with highest priority wins.
      *
      * Recommended priority scale:
      * - URL patterns: configurable per pattern (default varies)
@@ -48,6 +48,7 @@ interface RobotsProviderInterface
      * - Product page: 2000
      * - NoRoute (404): 5000
      * - Pagination: 10000
+     * - HTTPS: 15000
      *
      * @return int
      */

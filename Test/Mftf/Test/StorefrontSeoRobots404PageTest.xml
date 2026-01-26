@@ -28,6 +28,12 @@
             <actionGroup ref="AdminSetSeoRobotsEnabledActionGroup" stepKey="enableSeoRobots">
                 <argument name="enabled" value="1"/>
             </actionGroup>
+            <actionGroup ref="AdminSetNoRouteRobotsDirectivesActionGroup" stepKey="setNoindexTest">
+                <argument name="directive" value="noindex"/>
+            </actionGroup>
+            <actionGroup ref="AdminSetNoRouteRobotsDirectivesActionGroup" stepKey="setNoFollowTest">
+                <argument name="directive" value="nofollow"/>
+            </actionGroup>
             <actionGroup ref="AdminSaveSeoRobotsConfigActionGroup" stepKey="saveConfig"/>
             <actionGroup ref="CliCacheFlushActionGroup" stepKey="flushCache">
                 <argument name="tags" value=""/>

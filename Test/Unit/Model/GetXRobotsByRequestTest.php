@@ -9,357 +9,237 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\SeoRobotsFrontend\Test\Unit\Model;
 
-use Hryvinskyi\SeoApi\Api\CheckPatternInterface;
-use Hryvinskyi\SeoApi\Api\GetBaseUrlInterface;
-use Hryvinskyi\SeoRobotsApi\Api\ConfigInterface;
 use Hryvinskyi\SeoRobotsFrontend\Model\GetXRobotsByRequest;
+use Hryvinskyi\SeoRobotsFrontend\Model\XRobotsProviderInterface;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\Stdlib\Parameters;
-use Magento\Store\Api\Data\StoreInterface;
-use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class GetXRobotsByRequestTest extends TestCase
 {
     private GetXRobotsByRequest $model;
-    private ConfigInterface|MockObject $configMock;
-    private CheckPatternInterface|MockObject $checkPatternMock;
-    private GetBaseUrlInterface|MockObject $baseUrlMock;
     private RequestInterface|MockObject $requestMock;
-    private StoreManagerInterface|MockObject $storeManagerMock;
-    private StoreInterface|MockObject $storeMock;
-    private Parameters|MockObject $queryMock;
 
     protected function setUp(): void
     {
-        $this->configMock = $this->createMock(ConfigInterface::class);
-        $this->checkPatternMock = $this->createMock(CheckPatternInterface::class);
-        $this->baseUrlMock = $this->createMock(GetBaseUrlInterface::class);
-        $this->requestMock = $this->getMockBuilder(RequestInterface::class)
-            ->addMethods(['getControllerName', 'getQuery', 'getFullActionName'])
-            ->getMockForAbstractClass();
-        $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
-        $this->storeMock = $this->getMockBuilder(StoreInterface::class)
-            ->addMethods(['isCurrentlySecure'])
-            ->getMockForAbstractClass();
-        $this->queryMock = $this->createMock(Parameters::class);
-
-        $this->storeManagerMock->method('getStore')
-            ->willReturn($this->storeMock);
-
-        $this->requestMock->method('getQuery')
-            ->willReturn($this->queryMock);
+        $this->requestMock = $this->createMock(RequestInterface::class);
 
         $this->model = new GetXRobotsByRequest(
-            $this->configMock,
-            $this->checkPatternMock,
-            $this->baseUrlMock,
-            $this->requestMock,
-            $this->storeManagerMock
+            $this->requestMock
         );
     }
 
-    public function testExecuteReturnsHttpsDirectivesForSecureConnection(): void
+    public function testExecuteReturnsEmptyArrayWithNoProviders(): void
     {
-        $httpsDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->storeMock->expects($this->once())
-            ->method('isCurrentlySecure')
-            ->willReturn(true);
-
-        $this->configMock->expects($this->once())
-            ->method('getHttpsXRobotsDirectives')
-            ->willReturn($httpsDirectives);
-
-        $this->assertEquals($httpsDirectives, $this->model->execute());
-    }
-
-    public function testExecuteReturnsNoRouteDirectivesFor404Page(): void
-    {
-        $noRouteDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->storeMock->method('isCurrentlySecure')
-            ->willReturn(false);
-
-        $this->configMock->method('getHttpsXRobotsDirectives')
-            ->willReturn([]);
-
-        $this->requestMock->expects($this->once())
-            ->method('getControllerName')
-            ->willReturn('noroute');
-
-        $this->configMock->expects($this->once())
-            ->method('getNoRouteXRobotsTypes')
-            ->willReturn($noRouteDirectives);
-
-        $this->assertEquals($noRouteDirectives, $this->model->execute());
-    }
-
-    public function testExecuteFallsBackToMetaRobotsFor404WhenNoXRobotsSet(): void
-    {
-        $metaNoRouteDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->storeMock->method('isCurrentlySecure')
-            ->willReturn(false);
-
-        $this->configMock->method('getHttpsXRobotsDirectives')
-            ->willReturn([]);
-
-        $this->requestMock->expects($this->once())
-            ->method('getControllerName')
-            ->willReturn('noroute');
-
-        $this->configMock->method('getNoRouteXRobotsTypes')
-            ->willReturn([]);
-
-        $this->configMock->expects($this->once())
-            ->method('getNoRouteRobotsTypes')
-            ->willReturn($metaNoRouteDirectives);
-
-        $this->assertEquals($metaNoRouteDirectives, $this->model->execute());
-    }
-
-    public function testExecuteReturnsPaginatedDirectivesForPage2(): void
-    {
-        $paginatedDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->setupNonSecureNonNoRouteMocks();
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '2']);
-
-        $this->configMock->expects($this->once())
-            ->method('isXRobotsPaginatedEnabled')
-            ->willReturn(true);
-
-        $this->configMock->expects($this->once())
-            ->method('getPaginatedXRobots')
-            ->willReturn($paginatedDirectives);
-
-        $this->assertEquals($paginatedDirectives, $this->model->execute());
-    }
-
-    public function testExecuteFallsBackToMetaRobotsPaginatedWhenNoXRobotsPaginated(): void
-    {
-        $metaPaginatedDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->setupNonSecureNonNoRouteMocks();
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '2']);
-
-        $this->configMock->method('isXRobotsPaginatedEnabled')
-            ->willReturn(true);
-
-        $this->configMock->method('getPaginatedXRobots')
-            ->willReturn([]);
-
-        $this->configMock->expects($this->once())
-            ->method('isPaginatedRobots')
-            ->willReturn(true);
-
-        $this->configMock->expects($this->once())
-            ->method('getPaginatedMetaRobots')
-            ->willReturn($metaPaginatedDirectives);
-
-        $this->assertEquals($metaPaginatedDirectives, $this->model->execute());
-    }
-
-    public function testExecuteReturnsPaginatedFilteredDirectives(): void
-    {
-        $filteredDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->setupNonSecureNonNoRouteMocks();
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '2', 'color' => 'red']);
-
-        $this->configMock->expects($this->once())
-            ->method('isXRobotsPaginatedFilteredEnabled')
-            ->willReturn(true);
-
-        $this->configMock->expects($this->once())
-            ->method('getPaginatedFilteredXRobots')
-            ->willReturn($filteredDirectives);
-
-        $this->assertEquals($filteredDirectives, $this->model->execute());
-    }
-
-    public function testExecuteFallsBackToMetaRobotsPaginatedFilteredWhenNoXRobots(): void
-    {
-        $metaFilteredDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->setupNonSecureNonNoRouteMocks();
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '3', 'size' => 'large']);
-
-        $this->configMock->method('isXRobotsPaginatedFilteredEnabled')
-            ->willReturn(true);
-
-        $this->configMock->method('getPaginatedFilteredXRobots')
-            ->willReturn([]);
-
-        $this->configMock->expects($this->once())
-            ->method('isPaginatedFilteredRobots')
-            ->willReturn(true);
-
-        $this->configMock->expects($this->once())
-            ->method('getPaginatedFilteredMetaRobots')
-            ->willReturn($metaFilteredDirectives);
-
-        $this->assertEquals($metaFilteredDirectives, $this->model->execute());
-    }
-
-    public function testExecuteReturnsEmptyArrayWhenNoRulesConfigured(): void
-    {
-        $this->setupNonSecureNonNoRouteMocks();
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
-
-        $this->configMock->expects($this->once())
-            ->method('getXRobotsRules')
-            ->willReturn([]);
-
         $this->assertEquals([], $this->model->execute());
     }
 
-    public function testExecuteReturnsMatchedXRobotsRule(): void
+    public function testExecuteReturnsHighestPriorityDirectives(): void
     {
-        $xrobotsDirectives = ['noindex', 'nofollow'];
+        $provider1Mock = $this->createMock(XRobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(XRobotsProviderInterface::class);
 
-        $this->setupNonSecureNonNoRouteMocks();
+        $lowPriorityDirectives = [['value' => 'index', 'bot' => '', 'modification' => '']];
+        $highPriorityDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
 
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
+        $provider1Mock->method('getSortOrder')->willReturn(10);
+        $provider1Mock->method('getPriority')->willReturn(100);
+        $provider2Mock->method('getSortOrder')->willReturn(20);
+        $provider2Mock->method('getPriority')->willReturn(200);
 
-        $this->configMock->expects($this->once())
-            ->method('getXRobotsRules')
-            ->willReturn([
-                [
-                    'pattern' => 'catalog_product_*',
-                    'priority' => 10,
-                    'xrobots_directives' => $xrobotsDirectives,
-                ],
-            ]);
+        $provider1Mock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn($lowPriorityDirectives);
 
-        $this->requestMock->expects($this->once())
-            ->method('getFullActionName')
-            ->willReturn('catalog_product_view');
+        $provider2Mock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn($highPriorityDirectives);
 
-        $this->checkPatternMock->expects($this->once())
-            ->method('execute')
-            ->with('catalog_product_view', 'catalog_product_*')
-            ->willReturn(true);
+        $model = new GetXRobotsByRequest(
+            $this->requestMock,
+            [$provider1Mock, $provider2Mock]
+        );
 
-        $this->assertEquals($xrobotsDirectives, $this->model->execute());
+        // Higher priority (200) wins
+        $this->assertEquals($highPriorityDirectives, $model->execute());
     }
 
-    public function testExecuteIgnoresPage1(): void
+    public function testExecuteSelectsHigherPriorityEvenWithLowerSortOrder(): void
     {
-        $this->setupNonSecureNonNoRouteMocks();
+        $provider1Mock = $this->createMock(XRobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(XRobotsProviderInterface::class);
 
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '1']);
+        $categoryDirectives = [['value' => 'category_directive', 'bot' => '', 'modification' => '']];
+        $productDirectives = [['value' => 'product_directive', 'bot' => '', 'modification' => '']];
 
-        $this->configMock->expects($this->once())
-            ->method('getXRobotsRules')
-            ->willReturn([]);
+        // Provider 1 executes first (lower sortOrder) but has lower priority
+        $provider1Mock->method('getSortOrder')->willReturn(10);
+        $provider1Mock->method('getPriority')->willReturn(1000);
+        // Provider 2 executes second but has higher priority
+        $provider2Mock->method('getSortOrder')->willReturn(20);
+        $provider2Mock->method('getPriority')->willReturn(2000);
 
-        $this->assertEquals([], $this->model->execute());
+        $provider1Mock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn($categoryDirectives);
+
+        $provider2Mock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn($productDirectives);
+
+        $model = new GetXRobotsByRequest(
+            $this->requestMock,
+            [$provider1Mock, $provider2Mock]
+        );
+
+        // Higher priority wins regardless of sort order
+        $this->assertEquals($productDirectives, $model->execute());
     }
 
-    public function testExecuteSortsRulesByPriorityDescending(): void
+    public function testExecuteSkipsProviderReturningNull(): void
     {
-        $highPriorityDirectives = ['noindex'];
-        $lowPriorityDirectives = ['index'];
+        $provider1Mock = $this->createMock(XRobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(XRobotsProviderInterface::class);
 
-        $this->setupNonSecureNonNoRouteMocks();
+        $validDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
 
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
+        $provider1Mock->method('getSortOrder')->willReturn(10);
+        $provider1Mock->method('getPriority')->willReturn(100);
+        $provider2Mock->method('getSortOrder')->willReturn(20);
+        $provider2Mock->method('getPriority')->willReturn(200);
 
-        $this->configMock->expects($this->once())
-            ->method('getXRobotsRules')
-            ->willReturn([
-                [
-                    'pattern' => 'catalog_*',
-                    'priority' => 5,
-                    'xrobots_directives' => $lowPriorityDirectives,
-                ],
-                [
-                    'pattern' => 'catalog_product_*',
-                    'priority' => 10,
-                    'xrobots_directives' => $highPriorityDirectives,
-                ],
-            ]);
+        $provider1Mock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn(null);
 
-        $this->requestMock->expects($this->once())
-            ->method('getFullActionName')
-            ->willReturn('catalog_product_view');
+        $provider2Mock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn($validDirectives);
 
-        $this->checkPatternMock->expects($this->once())
-            ->method('execute')
-            ->with('catalog_product_view', 'catalog_product_*')
-            ->willReturn(true);
+        $model = new GetXRobotsByRequest(
+            $this->requestMock,
+            [$provider1Mock, $provider2Mock]
+        );
 
-        $this->assertEquals($highPriorityDirectives, $this->model->execute());
+        // Only provider2 returns a value
+        $this->assertEquals($validDirectives, $model->execute());
     }
 
-    public function testExecuteMatchesUrlPattern(): void
+    public function testExecuteReturnsEmptyArrayWhenAllProvidersReturnNull(): void
     {
-        $xrobotsDirectives = ['noarchive'];
+        $providerMock = $this->createMock(XRobotsProviderInterface::class);
+        $providerMock->method('getSortOrder')->willReturn(10);
+        $providerMock->method('getPriority')->willReturn(100);
 
-        $this->setupNonSecureNonNoRouteMocks();
+        $providerMock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn(null);
 
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
+        $model = new GetXRobotsByRequest(
+            $this->requestMock,
+            [$providerMock]
+        );
 
-        $this->configMock->expects($this->once())
-            ->method('getXRobotsRules')
-            ->willReturn([
-                [
-                    'pattern' => '*product.html',
-                    'priority' => 10,
-                    'xrobots_directives' => $xrobotsDirectives,
-                ],
-            ]);
-
-        $this->requestMock->expects($this->once())
-            ->method('getFullActionName')
-            ->willReturn('catalog_product_view');
-
-        $this->baseUrlMock->expects($this->once())
-            ->method('execute')
-            ->willReturn('https://example.com/product.html');
-
-        $this->checkPatternMock->expects($this->exactly(2))
-            ->method('execute')
-            ->willReturnOnConsecutiveCalls(false, true);
-
-        $this->assertEquals($xrobotsDirectives, $this->model->execute());
+        $this->assertEquals([], $model->execute());
     }
 
-    private function setupNonSecureNonNoRouteMocks(): void
+    public function testProvidersAreSortedBySortOrder(): void
     {
-        $this->storeMock->method('isCurrentlySecure')
-            ->willReturn(false);
+        $provider1Mock = $this->createMock(XRobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(XRobotsProviderInterface::class);
+        $provider3Mock = $this->createMock(XRobotsProviderInterface::class);
 
-        $this->configMock->method('getHttpsXRobotsDirectives')
-            ->willReturn([]);
+        // Providers added in random order
+        $provider1Mock->method('getSortOrder')->willReturn(30);
+        $provider1Mock->method('getPriority')->willReturn(100);
+        $provider2Mock->method('getSortOrder')->willReturn(10);
+        $provider2Mock->method('getPriority')->willReturn(100);
+        $provider3Mock->method('getSortOrder')->willReturn(20);
+        $provider3Mock->method('getPriority')->willReturn(100);
 
-        $this->requestMock->method('getControllerName')
-            ->willReturn('category');
+        $executionOrder = [];
+
+        $provider1Mock->method('getDirectives')
+            ->willReturnCallback(function () use (&$executionOrder) {
+                $executionOrder[] = 'provider1';
+                return null;
+            });
+
+        $provider2Mock->method('getDirectives')
+            ->willReturnCallback(function () use (&$executionOrder) {
+                $executionOrder[] = 'provider2';
+                return null;
+            });
+
+        $provider3Mock->method('getDirectives')
+            ->willReturnCallback(function () use (&$executionOrder) {
+                $executionOrder[] = 'provider3';
+                return null;
+            });
+
+        $model = new GetXRobotsByRequest(
+            $this->requestMock,
+            [$provider1Mock, $provider2Mock, $provider3Mock]
+        );
+
+        $model->execute();
+
+        // Should execute in sort order: provider2 (10), provider3 (20), provider1 (30)
+        $this->assertEquals(['provider2', 'provider3', 'provider1'], $executionOrder);
+    }
+
+    public function testExecuteWithSingleProvider(): void
+    {
+        $providerMock = $this->createMock(XRobotsProviderInterface::class);
+        $directives = [['value' => 'noindex', 'bot' => 'googlebot', 'modification' => '']];
+
+        $providerMock->method('getSortOrder')->willReturn(10);
+        $providerMock->method('getPriority')->willReturn(100);
+
+        $providerMock->expects($this->once())
+            ->method('getDirectives')
+            ->with($this->requestMock)
+            ->willReturn($directives);
+
+        $model = new GetXRobotsByRequest(
+            $this->requestMock,
+            [$providerMock]
+        );
+
+        $this->assertEquals($directives, $model->execute());
+    }
+
+    public function testExecuteWithEqualPrioritiesUsesLastEvaluated(): void
+    {
+        $provider1Mock = $this->createMock(XRobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(XRobotsProviderInterface::class);
+
+        $directives1 = [['value' => 'first', 'bot' => '', 'modification' => '']];
+        $directives2 = [['value' => 'second', 'bot' => '', 'modification' => '']];
+
+        // Same priority, different sort order
+        $provider1Mock->method('getSortOrder')->willReturn(10);
+        $provider1Mock->method('getPriority')->willReturn(100);
+        $provider2Mock->method('getSortOrder')->willReturn(20);
+        $provider2Mock->method('getPriority')->willReturn(100);
+
+        $provider1Mock->method('getDirectives')->willReturn($directives1);
+        $provider2Mock->method('getDirectives')->willReturn($directives2);
+
+        $model = new GetXRobotsByRequest(
+            $this->requestMock,
+            [$provider1Mock, $provider2Mock]
+        );
+
+        // With equal priorities, the current implementation keeps the first one found
+        // (priority check is > not >=)
+        $this->assertEquals($directives1, $model->execute());
     }
 }

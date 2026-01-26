@@ -10,14 +10,11 @@ declare(strict_types=1);
 namespace Hryvinskyi\SeoRobotsFrontend\Test\Unit\Model;
 
 use Hryvinskyi\SeoRobotsApi\Api\ConfigInterface;
-use Hryvinskyi\SeoRobotsApi\Api\RobotsListInterface;
 use Hryvinskyi\SeoRobotsFrontend\Model\ApplyRobots;
-use Hryvinskyi\SeoRobotsFrontend\Model\GetRobotsByRequestInterface;
 use Hryvinskyi\SeoRobotsFrontend\Model\IsIgnoredActionsInterface;
 use Hryvinskyi\SeoRobotsFrontend\Model\IsIgnoredUrlsInterface;
 use Hryvinskyi\SeoRobotsFrontend\Model\RobotsProviderInterface;
 use Magento\Framework\App\HttpRequestInterface;
-use Magento\Framework\Stdlib\Parameters;
 use Magento\Framework\View\Page\Config;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -27,34 +24,21 @@ class ApplyRobotsTest extends TestCase
     private ApplyRobots $model;
     private IsIgnoredActionsInterface|MockObject $ignoredActionsMock;
     private IsIgnoredUrlsInterface|MockObject $isIgnoredUrlsMock;
-    private GetRobotsByRequestInterface|MockObject $getRobotsByRequestMock;
-    private RobotsListInterface|MockObject $robotsListMock;
     private ConfigInterface|MockObject $configMock;
     private HttpRequestInterface|MockObject $requestMock;
     private Config|MockObject $pageConfigMock;
-    private Parameters|MockObject $queryMock;
 
     protected function setUp(): void
     {
         $this->ignoredActionsMock = $this->createMock(IsIgnoredActionsInterface::class);
         $this->isIgnoredUrlsMock = $this->createMock(IsIgnoredUrlsInterface::class);
-        $this->getRobotsByRequestMock = $this->createMock(GetRobotsByRequestInterface::class);
-        $this->robotsListMock = $this->createMock(RobotsListInterface::class);
         $this->configMock = $this->createMock(ConfigInterface::class);
-        $this->requestMock = $this->getMockBuilder(HttpRequestInterface::class)
-            ->addMethods(['getControllerName', 'getQuery'])
-            ->getMockForAbstractClass();
+        $this->requestMock = $this->createMock(HttpRequestInterface::class);
         $this->pageConfigMock = $this->createMock(Config::class);
-        $this->queryMock = $this->createMock(Parameters::class);
-
-        $this->requestMock->method('getQuery')
-            ->willReturn($this->queryMock);
 
         $this->model = new ApplyRobots(
             $this->ignoredActionsMock,
             $this->isIgnoredUrlsMock,
-            $this->getRobotsByRequestMock,
-            $this->robotsListMock,
             $this->configMock
         );
     }
@@ -108,179 +92,15 @@ class ApplyRobotsTest extends TestCase
         $this->model->execute($this->requestMock, $this->pageConfigMock);
     }
 
-    public function testExecuteAppliesRobotsFromGetRobotsByRequest(): void
-    {
-        $this->setupEnabledNonIgnoredMocks();
-
-        $this->getRobotsByRequestMock->expects($this->once())
-            ->method('execute')
-            ->with($this->requestMock)
-            ->willReturn('NOINDEX, NOFOLLOW');
-
-        $this->requestMock->method('getControllerName')
-            ->willReturn('category');
-
-        $this->configMock->method('getNoRouteRobotsTypes')
-            ->willReturn([]);
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
-
-        $this->pageConfigMock->expects($this->once())
-            ->method('setRobots')
-            ->with('NOINDEX, NOFOLLOW');
-
-        $this->model->execute($this->requestMock, $this->pageConfigMock);
-    }
-
-    public function testExecuteAppliesNoRouteRobotsFor404Page(): void
-    {
-        $this->setupEnabledNonIgnoredMocks();
-
-        $noRouteDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->getRobotsByRequestMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(null);
-
-        $this->requestMock->method('getControllerName')
-            ->willReturn('noroute');
-
-        $this->configMock->expects($this->once())
-            ->method('getNoRouteRobotsTypes')
-            ->willReturn($noRouteDirectives);
-
-        $this->robotsListMock->expects($this->once())
-            ->method('buildFromStructuredDirectives')
-            ->with($noRouteDirectives)
-            ->willReturn('NOINDEX');
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
-
-        $this->pageConfigMock->expects($this->once())
-            ->method('setRobots')
-            ->with('NOINDEX');
-
-        $this->model->execute($this->requestMock, $this->pageConfigMock);
-    }
-
-    public function testExecuteAppliesPaginatedRobotsForPage2(): void
-    {
-        $this->setupEnabledNonIgnoredMocks();
-
-        $paginatedDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->getRobotsByRequestMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(null);
-
-        $this->requestMock->method('getControllerName')
-            ->willReturn('category');
-
-        $this->configMock->method('getNoRouteRobotsTypes')
-            ->willReturn([]);
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '2']);
-
-        $this->configMock->expects($this->once())
-            ->method('isPaginatedRobots')
-            ->willReturn(true);
-
-        $this->configMock->expects($this->once())
-            ->method('getPaginatedMetaRobots')
-            ->willReturn($paginatedDirectives);
-
-        $this->robotsListMock->expects($this->once())
-            ->method('buildFromStructuredDirectives')
-            ->with($paginatedDirectives)
-            ->willReturn('NOINDEX');
-
-        $this->pageConfigMock->expects($this->once())
-            ->method('setRobots')
-            ->with('NOINDEX');
-
-        $this->model->execute($this->requestMock, $this->pageConfigMock);
-    }
-
-    public function testExecuteAppliesPaginatedFilteredRobots(): void
-    {
-        $this->setupEnabledNonIgnoredMocks();
-
-        $filteredDirectives = [['value' => 'noindex', 'bot' => '', 'modification' => '']];
-
-        $this->getRobotsByRequestMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(null);
-
-        $this->requestMock->method('getControllerName')
-            ->willReturn('category');
-
-        $this->configMock->method('getNoRouteRobotsTypes')
-            ->willReturn([]);
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '2', 'color' => 'red']);
-
-        $this->configMock->expects($this->once())
-            ->method('isPaginatedFilteredRobots')
-            ->willReturn(true);
-
-        $this->configMock->expects($this->once())
-            ->method('getPaginatedFilteredMetaRobots')
-            ->willReturn($filteredDirectives);
-
-        $this->robotsListMock->expects($this->once())
-            ->method('buildFromStructuredDirectives')
-            ->with($filteredDirectives)
-            ->willReturn('NOINDEX');
-
-        $this->pageConfigMock->expects($this->once())
-            ->method('setRobots')
-            ->with('NOINDEX');
-
-        $this->model->execute($this->requestMock, $this->pageConfigMock);
-    }
-
-    public function testExecuteIgnoresPage1(): void
-    {
-        $this->setupEnabledNonIgnoredMocks();
-
-        $this->getRobotsByRequestMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(null);
-
-        $this->requestMock->method('getControllerName')
-            ->willReturn('category');
-
-        $this->configMock->method('getNoRouteRobotsTypes')
-            ->willReturn([]);
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn(['p' => '1']);
-
-        $this->configMock->expects($this->once())
-            ->method('isPaginatedRobots');
-
-        $this->pageConfigMock->expects($this->never())
-            ->method('setRobots');
-
-        $this->model->execute($this->requestMock, $this->pageConfigMock);
-    }
-
-    public function testExecuteAppliesRobotsProviders(): void
+    public function testExecuteAppliesHighestPriorityProvider(): void
     {
         $provider1Mock = $this->createMock(RobotsProviderInterface::class);
         $provider2Mock = $this->createMock(RobotsProviderInterface::class);
 
         $provider1Mock->method('getSortOrder')->willReturn(10);
+        $provider1Mock->method('getPriority')->willReturn(100);
         $provider2Mock->method('getSortOrder')->willReturn(20);
+        $provider2Mock->method('getPriority')->willReturn(200);
 
         $provider1Mock->expects($this->once())
             ->method('getRobots')
@@ -295,8 +115,6 @@ class ApplyRobotsTest extends TestCase
         $model = new ApplyRobots(
             $this->ignoredActionsMock,
             $this->isIgnoredUrlsMock,
-            $this->getRobotsByRequestMock,
-            $this->robotsListMock,
             $this->configMock,
             [$provider2Mock, $provider1Mock]
         );
@@ -313,39 +131,115 @@ class ApplyRobotsTest extends TestCase
             ->method('execute')
             ->willReturn(false);
 
-        $this->getRobotsByRequestMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(null);
-
-        $this->requestMock->method('getControllerName')
-            ->willReturn('category');
-
-        $this->configMock->method('getNoRouteRobotsTypes')
-            ->willReturn([]);
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
-
-        $this->pageConfigMock->expects($this->exactly(2))
+        // Higher priority (200) wins, so NOFOLLOW should be set
+        $this->pageConfigMock->expects($this->once())
             ->method('setRobots')
-            ->willReturnCallback(function ($robots) {
-                static $calls = 0;
-                $calls++;
-                if ($calls === 1) {
-                    $this->assertEquals('NOINDEX', $robots);
-                } else {
-                    $this->assertEquals('NOFOLLOW', $robots);
-                }
-            });
+            ->with('NOFOLLOW');
+
+        $model->execute($this->requestMock, $this->pageConfigMock);
+    }
+
+    public function testExecuteSelectsHigherPriorityEvenWithLowerSortOrder(): void
+    {
+        $provider1Mock = $this->createMock(RobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(RobotsProviderInterface::class);
+
+        // Provider 1 executes first (lower sortOrder) but has lower priority
+        $provider1Mock->method('getSortOrder')->willReturn(10);
+        $provider1Mock->method('getPriority')->willReturn(1000);
+        // Provider 2 executes second but has higher priority
+        $provider2Mock->method('getSortOrder')->willReturn(20);
+        $provider2Mock->method('getPriority')->willReturn(2000);
+
+        $provider1Mock->expects($this->once())
+            ->method('getRobots')
+            ->with($this->requestMock)
+            ->willReturn('CATEGORY_ROBOTS');
+
+        $provider2Mock->expects($this->once())
+            ->method('getRobots')
+            ->with($this->requestMock)
+            ->willReturn('PRODUCT_ROBOTS');
+
+        $model = new ApplyRobots(
+            $this->ignoredActionsMock,
+            $this->isIgnoredUrlsMock,
+            $this->configMock,
+            [$provider1Mock, $provider2Mock]
+        );
+
+        $this->configMock->expects($this->once())
+            ->method('isEnabled')
+            ->willReturn(true);
+
+        $this->isIgnoredUrlsMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(false);
+
+        $this->ignoredActionsMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(false);
+
+        // Higher priority wins regardless of sort order
+        $this->pageConfigMock->expects($this->once())
+            ->method('setRobots')
+            ->with('PRODUCT_ROBOTS');
 
         $model->execute($this->requestMock, $this->pageConfigMock);
     }
 
     public function testExecuteSkipsProviderReturningNull(): void
     {
+        $provider1Mock = $this->createMock(RobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(RobotsProviderInterface::class);
+
+        $provider1Mock->method('getSortOrder')->willReturn(10);
+        $provider1Mock->method('getPriority')->willReturn(100);
+        $provider2Mock->method('getSortOrder')->willReturn(20);
+        $provider2Mock->method('getPriority')->willReturn(200);
+
+        $provider1Mock->expects($this->once())
+            ->method('getRobots')
+            ->with($this->requestMock)
+            ->willReturn(null);
+
+        $provider2Mock->expects($this->once())
+            ->method('getRobots')
+            ->with($this->requestMock)
+            ->willReturn('NOFOLLOW');
+
+        $model = new ApplyRobots(
+            $this->ignoredActionsMock,
+            $this->isIgnoredUrlsMock,
+            $this->configMock,
+            [$provider1Mock, $provider2Mock]
+        );
+
+        $this->configMock->expects($this->once())
+            ->method('isEnabled')
+            ->willReturn(true);
+
+        $this->isIgnoredUrlsMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(false);
+
+        $this->ignoredActionsMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(false);
+
+        // Only provider2 returns a value
+        $this->pageConfigMock->expects($this->once())
+            ->method('setRobots')
+            ->with('NOFOLLOW');
+
+        $model->execute($this->requestMock, $this->pageConfigMock);
+    }
+
+    public function testExecuteDoesNotSetRobotsWhenAllProvidersReturnNull(): void
+    {
         $providerMock = $this->createMock(RobotsProviderInterface::class);
         $providerMock->method('getSortOrder')->willReturn(10);
+        $providerMock->method('getPriority')->willReturn(100);
 
         $providerMock->expects($this->once())
             ->method('getRobots')
@@ -355,8 +249,6 @@ class ApplyRobotsTest extends TestCase
         $model = new ApplyRobots(
             $this->ignoredActionsMock,
             $this->isIgnoredUrlsMock,
-            $this->getRobotsByRequestMock,
-            $this->robotsListMock,
             $this->configMock,
             [$providerMock]
         );
@@ -373,27 +265,13 @@ class ApplyRobotsTest extends TestCase
             ->method('execute')
             ->willReturn(false);
 
-        $this->getRobotsByRequestMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(null);
-
-        $this->requestMock->method('getControllerName')
-            ->willReturn('category');
-
-        $this->configMock->method('getNoRouteRobotsTypes')
-            ->willReturn([]);
-
-        $this->queryMock->expects($this->once())
-            ->method('toArray')
-            ->willReturn([]);
-
         $this->pageConfigMock->expects($this->never())
             ->method('setRobots');
 
         $model->execute($this->requestMock, $this->pageConfigMock);
     }
 
-    private function setupEnabledNonIgnoredMocks(): void
+    public function testExecuteWithNoProviders(): void
     {
         $this->configMock->expects($this->once())
             ->method('isEnabled')
@@ -405,7 +283,62 @@ class ApplyRobotsTest extends TestCase
 
         $this->ignoredActionsMock->expects($this->once())
             ->method('execute')
-            ->with($this->requestMock)
             ->willReturn(false);
+
+        $this->pageConfigMock->expects($this->never())
+            ->method('setRobots');
+
+        $this->model->execute($this->requestMock, $this->pageConfigMock);
+    }
+
+    public function testProvidersAreSortedBySortOrder(): void
+    {
+        $provider1Mock = $this->createMock(RobotsProviderInterface::class);
+        $provider2Mock = $this->createMock(RobotsProviderInterface::class);
+        $provider3Mock = $this->createMock(RobotsProviderInterface::class);
+
+        // Providers added in random order
+        $provider1Mock->method('getSortOrder')->willReturn(30);
+        $provider1Mock->method('getPriority')->willReturn(100);
+        $provider2Mock->method('getSortOrder')->willReturn(10);
+        $provider2Mock->method('getPriority')->willReturn(100);
+        $provider3Mock->method('getSortOrder')->willReturn(20);
+        $provider3Mock->method('getPriority')->willReturn(100);
+
+        $executionOrder = [];
+
+        $provider1Mock->method('getRobots')
+            ->willReturnCallback(function () use (&$executionOrder) {
+                $executionOrder[] = 'provider1';
+                return null;
+            });
+
+        $provider2Mock->method('getRobots')
+            ->willReturnCallback(function () use (&$executionOrder) {
+                $executionOrder[] = 'provider2';
+                return null;
+            });
+
+        $provider3Mock->method('getRobots')
+            ->willReturnCallback(function () use (&$executionOrder) {
+                $executionOrder[] = 'provider3';
+                return null;
+            });
+
+        $model = new ApplyRobots(
+            $this->ignoredActionsMock,
+            $this->isIgnoredUrlsMock,
+            $this->configMock,
+            [$provider1Mock, $provider2Mock, $provider3Mock]
+        );
+
+        $this->configMock->method('isEnabled')->willReturn(true);
+        $this->isIgnoredUrlsMock->method('execute')->willReturn(false);
+        $this->ignoredActionsMock->method('execute')->willReturn(false);
+
+        $model->execute($this->requestMock, $this->pageConfigMock);
+
+        // Should execute in sort order: provider2 (10), provider3 (20), provider1 (30)
+        $this->assertEquals(['provider2', 'provider3', 'provider1'], $executionOrder);
     }
 }

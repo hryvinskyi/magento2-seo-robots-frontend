@@ -10,21 +10,32 @@ declare(strict_types=1);
 namespace Hryvinskyi\SeoRobotsFrontend\Model;
 
 use Hryvinskyi\SeoRobotsApi\Api\ConfigInterface;
-use Hryvinskyi\SeoRobotsApi\Api\RobotsListInterface;
 use Magento\Framework\App\HttpRequestInterface;
 use Magento\Framework\View\Page\Config;
 
+/**
+ * Applies robots meta tags based on priority from all registered providers
+ */
 class ApplyRobots implements ApplyRobotsInterface
 {
+    /**
+     * @var array<RobotsProviderInterface>
+     */
+    private array $sortedProviders;
+
+    /**
+     * @param IsIgnoredActionsInterface $ignoredActions
+     * @param IsIgnoredUrlsInterface $isIgnoredUrls
+     * @param ConfigInterface $config
+     * @param array<RobotsProviderInterface> $robotsProviders
+     */
     public function __construct(
         private readonly IsIgnoredActionsInterface $ignoredActions,
         private readonly IsIgnoredUrlsInterface $isIgnoredUrls,
-        private readonly GetRobotsByRequestInterface $getRobotsByRequest,
-        private readonly RobotsListInterface $robotsList,
         private readonly ConfigInterface $config,
-        private array $robotsProviders = []
+        array $robotsProviders = []
     ) {
-        $this->robotsProviders = $this->sortProviders($robotsProviders);
+        $this->sortedProviders = $this->sortProviders($robotsProviders);
     }
 
     /**
@@ -32,54 +43,40 @@ class ApplyRobots implements ApplyRobotsInterface
      */
     public function execute(HttpRequestInterface $request, Config $pageConfig): void
     {
-        if ($this->config->isEnabled() === false || $this->isIgnoredUrls->execute() === true
-            || $this->ignoredActions->execute($request) === true
+        if (!$this->config->isEnabled() || $this->isIgnoredUrls->execute()
+            || $this->ignoredActions->execute($request)
         ) {
             return;
         }
 
-        if ($robots = $this->getRobotsByRequest->execute($request)) {
-            $pageConfig->setRobots($robots);
-        }
+        $highestPriority = null;
+        $winningRobots = null;
 
-        $routeRobotsTypes = $this->config->getNoRouteRobotsTypes();
-
-        if (!empty($routeRobotsTypes) && $request->getControllerName() === 'noroute') {
-            $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($routeRobotsTypes));
-        }
-
-        // Check URL query params directly
-        $queryParams = $request->getQuery()->toArray();
-        if (isset($queryParams['p'])) {
-            // Pagination only (no filters) - 'p' is the only query parameter
-            if (count($queryParams) === 1 && $this->config->isPaginatedRobots() === true) {
-                $directives = $this->config->getPaginatedMetaRobots();
-                $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($directives));
-            }
-            // Pagination with filters - 'p' plus other query parameters
-            elseif (count($queryParams) > 1 && $this->config->isPaginatedFilteredRobots() === true) {
-                $directives = $this->config->getPaginatedFilteredMetaRobots();
-                $pageConfig->setRobots($this->robotsList->buildFromStructuredDirectives($directives));
+        foreach ($this->sortedProviders as $provider) {
+            $robots = $provider->getRobots($request);
+            if ($robots !== null) {
+                $priority = $provider->getPriority();
+                if ($highestPriority === null || $priority > $highestPriority) {
+                    $highestPriority = $priority;
+                    $winningRobots = $robots;
+                }
             }
         }
 
-        // Apply custom robots from providers
-        foreach ($this->robotsProviders as $provider) {
-            if ($providerRobots = $provider->getRobots($request)) {
-                $pageConfig->setRobots($providerRobots);
-            }
+        if ($winningRobots !== null) {
+            $pageConfig->setRobots($winningRobots);
         }
     }
 
     /**
-     * Sort providers by sort order
+     * Sort providers by sort order (lower executes first)
      *
-     * @param array $providers
-     * @return array
+     * @param array<RobotsProviderInterface> $providers
+     * @return array<RobotsProviderInterface>
      */
     private function sortProviders(array $providers): array
     {
-        usort($providers, function (RobotsProviderInterface $a, RobotsProviderInterface $b) {
+        usort($providers, static function (RobotsProviderInterface $a, RobotsProviderInterface $b): int {
             return $a->getSortOrder() <=> $b->getSortOrder();
         });
 
